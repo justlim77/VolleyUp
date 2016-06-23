@@ -1,41 +1,59 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class ArmBat : MonoBehaviour
+namespace Volley
 {
-    public Transform target;
-
-    Collider col;
-    Rigidbody rb;
-
-    Vector3 _cachedVel;
-
-    // Use this for initialization
-    void Start ()
+    public class ArmBat : MonoBehaviour
     {
-        col = this.GetComponent<Collider>();
-        rb = this.GetComponent<Rigidbody>();
+        public Transform target;
+        public Vector3 hitForce;
 
-        if (target == null)
+
+        Collider col;
+        Rigidbody rb;
+
+        Vector3 _cachedVel;
+
+        // Use this for initialization
+        void Start ()
         {
-            Debug.Log("No target found!");
-        }
-	}
+            col = this.GetComponent<Collider>();
+            rb = this.GetComponent<Rigidbody>();
+
+            if (target == null)
+            {
+                Debug.Log("No target found!");
+            }
+	    }
 	
-	// Update is called once per frame
-	void Update ()
-    {
-        if (target != null)
+	    // Update is called once per frame
+	    void Update ()
         {
-            Follow();
+            if (target != null)
+            {
+                Follow();
+            }
+
+            // Velocity check
+
+	    }
+
+        void Follow()
+        {
+            this.transform.position = target.position;
         }
 
-        // Velocity check
-
-	}
-
-    void Follow()
-    {
-        this.transform.position = target.position;
+        void OnCollisionEnter(Collision col)
+        {
+            IInteractable i = col.gameObject.GetComponent<IInteractable>();
+            if (i != null)
+            {
+                float hitMag = col.relativeVelocity.magnitude;
+                Debug.Log("Collision magnitude: " + hitMag);
+                i.Interact(hitForce);
+                int points = (int)hitMag * i.Points;
+                Core.BroadcastEvent("OnBallHit", this, points);
+            }
+        }
     }
 }
