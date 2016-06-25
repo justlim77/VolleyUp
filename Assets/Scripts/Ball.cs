@@ -16,6 +16,7 @@ namespace Volley
         Vector3 _cachedVel;
         int[] layerIndices;
         int _points;
+        bool _permSolid;
 
         public int Points
         {
@@ -30,10 +31,15 @@ namespace Volley
             }
         }
 
-        public void Interact(Vector3 force)
+        public void Interact(object args)
         {
             col.isTrigger = false;
-            rb.AddForce(force);
+            _permSolid = true;
+            if (args is Vector3)
+            {
+                Vector3 force = (Vector3)args;
+                rb.AddForce(force);
+            }
         }
 
         // Use this for initialization
@@ -44,7 +50,9 @@ namespace Volley
             if (col != null)
             {
                 col.isTrigger = true;
+                col.enabled = false;
             }
+            Invoke("Activate", 1f);
 
             layerIndices = new int[destroyLayers.Length];
             for(int i = 0; i<layerIndices.Length; i++)
@@ -53,6 +61,7 @@ namespace Volley
             }
 
             Points = pointsOnHit;
+            _permSolid = false;
 
             Destroy(this.gameObject, autoDestructTime * 2.0f);
 	    }
@@ -60,6 +69,9 @@ namespace Volley
 	    // Update is called once per frame
 	    void Update ()
         {
+            if (_permSolid == true)
+                return;
+
             Vector3 localVel = transform.InverseTransformDirection(rb.velocity);
             if (col != null)
             {
@@ -69,6 +81,12 @@ namespace Volley
 
         void OnCollisionEnter(Collision col)
         {
+            IInteractable i = col.gameObject.GetComponent<IInteractable>();
+            if (i != null)
+            {
+                i.Interact(null);
+            }
+
             foreach (int layerIndex in layerIndices)
             {
                 if (col.gameObject.layer == layerIndex)
@@ -77,6 +95,12 @@ namespace Volley
                     break;
                 }
             }
+        }
+
+        void Activate()
+        {
+            if (col != null)
+                col.enabled = true;
         }
     }
 }

@@ -7,6 +7,7 @@ namespace Volley
     {
         public Transform target;
         public Vector3 hitForce;
+        public Vector3 horizontalForce;
 
 
         Collider col;
@@ -40,19 +41,24 @@ namespace Volley
 
         void Follow()
         {
-            this.transform.position = target.position;
+            rb.MovePosition(target.position);
         }
 
-        void OnCollisionEnter(Collision col)
+        void OnTriggerEnter(Collider col)
         {
             IInteractable i = col.gameObject.GetComponent<IInteractable>();
             if (i != null)
             {
-                float hitMag = col.relativeVelocity.magnitude;
-                Debug.Log("Collision magnitude: " + hitMag);
-                i.Interact(hitForce);
-                int points = (int)hitMag * i.Points;
-                Core.BroadcastEvent("OnBallHit", this, points);
+                //float hitMag = col.relativeVelocity.magnitude;
+                //Debug.Log("Collision magnitude: " + hitMag);
+                Vector3 vel = col.attachedRigidbody.velocity.normalized;
+                Vector3 hForce = new Vector3(horizontalForce.x * vel.x, 0, 0);
+                Debug.Log("Collision velocity: " + vel);
+                // Check how close the collision happened
+                float dist = Vector3.Distance(transform.position, col.transform.position);
+                Debug.Log("Collision distance: " + dist);
+                i.Interact(hitForce + hForce);
+                Core.BroadcastEvent("OnBallHit", this, dist);
             }
         }
     }
