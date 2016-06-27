@@ -995,11 +995,11 @@ public class AvatarController : MonoBehaviour
 		Quaternion newRotation = jointRotation * initialRotations[boneIndex];
 		//newRotation = initialRotation * newRotation;
 
-		if(offsetNode != null)
-		{
-			newRotation = offsetNode.transform.rotation * newRotation;
-		}
-		else
+//		if(offsetNode != null)
+//		{
+//			newRotation = offsetNode.transform.rotation * newRotation;
+//		}
+//		else
 		{
 			newRotation = initialRotation * newRotation;
 		}
@@ -1016,9 +1016,13 @@ public class AvatarController : MonoBehaviour
 		
 		Vector3 newPosition = new Vector3(xPos, bMoveVertically ? yPos : 0f, zPos);
 
+		Quaternion posRotation = mirroredMovement ? Quaternion.Euler (0f, 180f, 0f) * initialRotation : initialRotation;
+		newPosition = posRotation * newPosition;
+
 		if(offsetNode != null)
 		{
-			newPosition += offsetNode.transform.position;
+			//newPosition += offsetNode.transform.position;
+			newPosition = offsetNode.transform.position;
 		}
 		
 		return newPosition;

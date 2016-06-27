@@ -6,8 +6,11 @@ using Microsoft.Kinect.Face;
 
 public class GetFacePointsDemo : MonoBehaviour 
 {
+	[Tooltip("Index of the player, tracked by this component. 0 means the 1st player, 1 - the 2nd one, 2 - the 3rd one, etc.")]
+	public int playerIndex = 0;
+
 	[Tooltip("Tracked face point.")]
-	public FacePointType facePoint = FacePointType.Nose;
+	public HighDetailFacePoints facePoint = HighDetailFacePoints.NoseTip;
 
 	[Tooltip("Transform used to show the selected face point in space.")]
 	public Transform facePointTransform;
@@ -16,87 +19,98 @@ public class GetFacePointsDemo : MonoBehaviour
 	public GUIText faceInfoText;
 
 	private KinectManager manager = null;
-	private Kinect2Interface k2interface = null;
+	private FacetrackingManager faceManager = null;
+	//private Kinect2Interface k2interface = null;
 
-	private Dictionary<FacePointType, Point> facePoints;
+	private Vector3[] faceVertices;
+	private Dictionary<HighDetailFacePoints, Vector3> dictFacePoints = new Dictionary<HighDetailFacePoints, Vector3> ();
 
 
-	// returns the face point coordinates or Vector2.zero if not found
-	public Vector2 GetFacePoint(FacePointType pointType)
+	// returns the face point coordinates or Vector3.zero if not found
+	public Vector3 GetFacePoint(HighDetailFacePoints pointType)
 	{
-		if(facePoints != null && facePoints.ContainsKey(pointType))
+		if(dictFacePoints != null && dictFacePoints.ContainsKey(pointType))
 		{
-			Point msPoint = facePoints[pointType];
-			return new Vector2(msPoint.X, msPoint.Y);
+			return dictFacePoints[pointType];
 		}
 
 		return Vector3.zero;
 	}
 
+
 	void Update () 
 	{
-		// get reference to the Kinect2Interface
-		if(k2interface == null)
+		if (!manager) 
 		{
 			manager = KinectManager.Instance;
-			
-			if(manager && manager.IsInitialized())
-			{
-				KinectInterop.SensorData sensorData = manager.GetSensorData();
-				
-				if(sensorData != null && sensorData.sensorInterface != null)
-				{
-					k2interface = (Kinect2Interface)sensorData.sensorInterface;
-				}
-			}
 		}
+
+		if (!faceManager) 
+		{
+			faceManager = FacetrackingManager.Instance;
+		}
+
+//		// get reference to the Kinect2Interface
+//		if(k2interface == null)
+//		{
+//			manager = KinectManager.Instance;
+//			
+//			if(manager && manager.IsInitialized())
+//			{
+//				KinectInterop.SensorData sensorData = manager.GetSensorData();
+//				
+//				if(sensorData != null && sensorData.sensorInterface != null)
+//				{
+//					k2interface = (Kinect2Interface)sensorData.sensorInterface;
+//				}
+//			}
+//		}
 
 		// get the face points
-		if(k2interface != null && k2interface.faceFrameResults != null)
+		if(manager != null && manager.IsInitialized() && faceManager && faceManager.IsFaceTrackingInitialized())
 		{
-			if(manager != null && manager.IsUserDetected())
+			long userId = manager.GetUserIdByIndex(playerIndex);
+			
+			if (faceVertices == null) 
 			{
-				ulong userId = (ulong)manager.GetPrimaryUserID();
-				
-				for(int i = 0; i < k2interface.faceFrameResults.Length; i++)
+				int iVertCount = faceManager.GetUserFaceVertexCount(userId);
+
+				if (iVertCount > 0) 
 				{
-					if(k2interface.faceFrameResults[i] != null && k2interface.faceFrameResults[i].TrackingId == userId)
+					faceVertices = new Vector3[iVertCount];
+				}
+			}
+
+			if (faceVertices != null) 
+			{
+				if (faceManager.GetUserFaceVertices(userId, ref faceVertices)) 
+				{
+					Matrix4x4 kinectToWorld = manager.GetKinectToWorldMatrix();
+					HighDetailFacePoints[] facePoints = (HighDetailFacePoints[])System.Enum.GetValues(typeof(HighDetailFacePoints));
+
+					for (int i = 0; i < facePoints.Length; i++) 
 					{
-						facePoints = k2interface.faceFrameResults[i].FacePointsInColorSpace;
-						break;
+						HighDetailFacePoints point = facePoints[i];
+						dictFacePoints[point] = kinectToWorld.MultiplyPoint3x4(faceVertices[(int)point]);
 					}
 				}
 			}
+
 		}
 
-		if(manager && manager.IsInitialized() && k2interface != null)
+		if(faceVertices != null && faceVertices[(int)facePoint] != Vector3.zero)
 		{
-			long userId = manager.GetPrimaryUserID();
+			Vector3 facePointPos = faceVertices [(int)facePoint];
 
-			if(manager.IsJointTracked(userId, (int)KinectInterop.JointType.Head))
+			if (facePointTransform) 
 			{
-				//Vector3 headPos = manager.GetJointPosition(userId, (int)KinectInterop.JointType.Head);
-				string sStatus = string.Empty;  // string.Format("Head: {0}\n", headPos);
+				facePointTransform.position = facePointPos;
+			}
 
-				Vector2 facePointColor = GetFacePoint(facePoint);
-				if(facePointColor != Vector2.zero && !float.IsInfinity(facePointColor.x) && !float.IsInfinity(facePointColor.y))
-				{
-					Vector2 facePointDepth = manager.MapColorPointToDepthCoords(facePointColor, true);
-
-					if(facePointDepth != Vector2.zero && !float.IsInfinity(facePointDepth.x) && !float.IsInfinity(facePointDepth.y))
-					{
-						ushort depthValue = manager.GetDepthForPixel((int)facePointDepth.x, (int)facePointDepth.y);
-						Vector3 facePointPos = manager.MapDepthPointToSpaceCoords(facePointDepth, depthValue, true);
-
-						facePointTransform.position = facePointPos;
-						sStatus += string.Format("{0}: {1}", facePoint, facePointPos);
-					}
-				}
-
-				if(faceInfoText)
-				{
-					faceInfoText.text = sStatus;
-				}
+			if(faceInfoText)
+			{
+				string sStatus = string.Format("{0}: {1}", facePoint, facePointPos);
+				faceInfoText.text = sStatus;
 			}
 		}
 

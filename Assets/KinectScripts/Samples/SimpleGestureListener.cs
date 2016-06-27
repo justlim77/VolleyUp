@@ -6,6 +6,9 @@ using System;
 
 public class SimpleGestureListener : MonoBehaviour, KinectGestures.GestureListenerInterface
 {
+	[Tooltip("Index of the player, tracked by this component. 0 means the 1st player, 1 - the 2nd one, 2 - the 3rd one, etc.")]
+	public int playerIndex = 0;
+
 	[Tooltip("GUI-Text to display gesture-listener messages and gesture information.")]
 	public GUIText gestureInfo;
 	
@@ -16,6 +19,9 @@ public class SimpleGestureListener : MonoBehaviour, KinectGestures.GestureListen
 	
 	public void UserDetected(long userId, int userIndex)
 	{
+		if (userIndex != playerIndex)
+			return;
+
 		// as an example - detect these user specific gestures
 		KinectManager manager = KinectManager.Instance;
 		manager.DetectGesture(userId, KinectGestures.Gestures.Jump);
@@ -33,6 +39,9 @@ public class SimpleGestureListener : MonoBehaviour, KinectGestures.GestureListen
 	
 	public void UserLost(long userId, int userIndex)
 	{
+		if (userIndex != playerIndex)
+			return;
+
 		if(gestureInfo != null)
 		{
 			gestureInfo.GetComponent<GUIText>().text = string.Empty;
@@ -42,6 +51,9 @@ public class SimpleGestureListener : MonoBehaviour, KinectGestures.GestureListen
 	public void GestureInProgress(long userId, int userIndex, KinectGestures.Gestures gesture, 
 	                              float progress, KinectInterop.JointType joint, Vector3 screenPos)
 	{
+		if (userIndex != playerIndex)
+			return;
+
 		if((gesture == KinectGestures.Gestures.ZoomOut || gesture == KinectGestures.Gestures.ZoomIn) && progress > 0.5f)
 		{
 			if(gestureInfo != null)
@@ -81,6 +93,9 @@ public class SimpleGestureListener : MonoBehaviour, KinectGestures.GestureListen
 	public bool GestureCompleted(long userId, int userIndex, KinectGestures.Gestures gesture, 
 	                              KinectInterop.JointType joint, Vector3 screenPos)
 	{
+		if (userIndex != playerIndex)
+			return false;
+
 		if(progressDisplayed)
 			return true;
 
@@ -96,6 +111,9 @@ public class SimpleGestureListener : MonoBehaviour, KinectGestures.GestureListen
 	public bool GestureCancelled(long userId, int userIndex, KinectGestures.Gestures gesture, 
 	                              KinectInterop.JointType joint)
 	{
+		if (userIndex != playerIndex)
+			return false;
+
 		if(progressDisplayed)
 		{
 			progressDisplayed = false;

@@ -27,7 +27,7 @@ public class AvatarControllerClassic : AvatarController
 	public Transform HandLeft;
 	public Transform FingersLeft;
 //	private Transform FingerTipsLeft = null;
-//	private Transform ThumbLeft = null;
+	public Transform ThumbLeft;
 
 	public Transform ClavicleRight;
 	public Transform ShoulderRight;
@@ -35,7 +35,7 @@ public class AvatarControllerClassic : AvatarController
 	public Transform HandRight;
 	public Transform FingersRight;
 //	private Transform FingerTipsRight = null;
-//	private Transform ThumbRight = null;
+	public Transform ThumbRight;
 	
 	public Transform HipLeft;
 	public Transform KneeLeft;
@@ -66,14 +66,14 @@ public class AvatarControllerClassic : AvatarController
 		bones[5] = ShoulderLeft;
 		bones[6] = ElbowLeft;
 		bones[7] = HandLeft;
-		bones[8] = FingersLeft;
+//		bones[8] = FingersLeft;
 //		bones[9] = FingerTipsLeft;
 //		bones[10] = ThumbLeft;
 	
 		bones[11] = ShoulderRight;
 		bones[12] = ElbowRight;
 		bones[13] = HandRight;
-		bones[14] = FingersRight;
+//		bones[14] = FingersRight;
 //		bones[15] = FingerTipsRight;
 //		bones[16] = ThumbRight;
 	
@@ -90,6 +90,11 @@ public class AvatarControllerClassic : AvatarController
 		// special bones
 		bones[25] = ClavicleLeft;
 		bones[26] = ClavicleRight;
+
+		bones[27] = FingersLeft;
+		bones[28] = FingersRight;
+		bones[29] = ThumbLeft;
+		bones[30] = ThumbRight;
 		
 		// body root and offset
 		bodyRoot = BodyRoot;

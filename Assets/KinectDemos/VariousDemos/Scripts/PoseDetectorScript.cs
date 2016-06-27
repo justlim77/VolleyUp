@@ -74,7 +74,7 @@ public class PoseDetectorScript : MonoBehaviour
 			// no user found
 			if(infoText != null)
 			{
-				infoText.text = "Please stay in the target pose.";
+				infoText.text = "Try to match the pose on the left.";
 			}
 		}
 	}

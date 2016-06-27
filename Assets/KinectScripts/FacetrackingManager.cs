@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 //using System.Runtime.InteropServices;
+using System.Text;
 
 
 /// <summary>
@@ -154,7 +155,7 @@ public class FacetrackingManager : MonoBehaviour
 	/// <param name="bMirroredMovement">If set to <c>true</c> returns mirorred head position.</param>
 	public Vector3 GetHeadPosition(bool bMirroredMovement)
 	{
-		Vector3 vHeadPos = bGotHeadPos ? headPos : Vector3.zero;
+		Vector3 vHeadPos = headPos; // bGotHeadPos ? headPos : Vector3.zero;
 
 		if(!bMirroredMovement)
 		{
@@ -195,7 +196,7 @@ public class FacetrackingManager : MonoBehaviour
 	/// <param name="bMirroredMovement">If set to <c>true</c> returns mirorred head rotation.</param>
 	public Quaternion GetHeadRotation(bool bMirroredMovement)
 	{
-		Vector3 rotAngles = bGotHeadRot ? headRot.eulerAngles : Vector3.zero;
+		Vector3 rotAngles = headRot.eulerAngles; // bGotHeadRot ? headRot.eulerAngles : Vector3.zero;
 
 		if(bMirroredMovement)
 		{
@@ -344,7 +345,7 @@ public class FacetrackingManager : MonoBehaviour
 	/// <returns>The count of face model vertices.</returns>
 	public int GetFaceModelVertexCount()
 	{
-		if (bGotModelVertices) 
+		if (avModelVertices != null) 
 		{
 			return avModelVertices.Length;
 		} 
@@ -359,7 +360,7 @@ public class FacetrackingManager : MonoBehaviour
 	/// <param name="index">Vertex index, or Vector3.zero</param>
 	public Vector3 GetFaceModelVertex(int index)
 	{
-		if (bGotModelVertices) 
+		if (avModelVertices != null) 
 		{
 			if(index >= 0 && index < avModelVertices.Length)
 			{
@@ -376,12 +377,23 @@ public class FacetrackingManager : MonoBehaviour
 	/// <returns>The face model vertices, or null.</returns>
 	public Vector3[] GetFaceModelVertices()
 	{
-		if (bGotModelVertices) 
+		return avModelVertices;
+	}
+
+	/// <summary>
+	/// Gets the count of face model vertices for the specified user
+	/// </summary>
+	/// <returns>The count of face model vertices.</returns>
+	/// <param name="userId">User ID</param>
+	public int GetUserFaceVertexCount(long userId)
+	{
+		if(sensorData != null && sensorData.sensorInterface != null)
 		{
-			return avModelVertices;
+			int iVertCount = sensorData.sensorInterface.GetFaceModelVerticesCount(userId);
+			return iVertCount;
 		}
 
-		return null;
+		return 0;
 	}
 
 	/// <summary>
@@ -401,6 +413,20 @@ public class FacetrackingManager : MonoBehaviour
 		return false;
 	}
 	
+	/// <summary>
+	/// Gets the count of face model triangles.
+	/// </summary>
+	/// <returns>The count of face model triangles.</returns>
+	public int GetFaceModelTriangleCount()
+	{
+		if (sensorData != null && sensorData.sensorInterface != null) 
+		{
+			return sensorData.sensorInterface.GetFaceModelTrianglesCount();
+		}
+
+		return 0;
+	}
+
 	/// <summary>
 	/// Gets the face model triangle indices, if a face model is available; null otherwise.
 	/// </summary>
@@ -561,7 +587,7 @@ public class FacetrackingManager : MonoBehaviour
 						}
 					}
 					
-					if(getFaceModelData)
+					if(getFaceModelData && bFaceModelMeshInited)
 					{
 						UpdateFaceModelMesh(primaryUserID, faceModelMesh, headPos, headRot, faceRect, ref avModelVertices, ref avModelUV, ref bGotModelVertices);
 					}
@@ -604,27 +630,20 @@ public class FacetrackingManager : MonoBehaviour
 //		if(faceModelMesh == null)
 //			return false;
 
-		int iNumTriangles = sensorData.sensorInterface.GetFaceModelTrianglesCount();
-		if(iNumTriangles <= 0)
-			return false;
+		if (avModelVertices == null) 
+		{
+			int iNumVertices = sensorData.sensorInterface.GetFaceModelVerticesCount(0);
+			if(iNumVertices < 0)
+				return false;
 
-		int[] avModelTriangles = new int[iNumTriangles];
-		bool bGotModelTriangles = sensorData.sensorInterface.GetFaceModelTriangles(mirroredModelMesh, ref avModelTriangles);
+			avModelVertices = new Vector3[iNumVertices];
+			bGotModelVertices = sensorData.sensorInterface.GetFaceModelVertices(0, ref avModelVertices);
 
-		if(!bGotModelTriangles)
-			return false;
-		
-		int iNumVertices = sensorData.sensorInterface.GetFaceModelVerticesCount(0);
-		if(iNumVertices < 0)
-			return false;
+			avModelUV = new Vector2[iNumVertices];
 
-		avModelVertices = new Vector3[iNumVertices];
-		bGotModelVertices = sensorData.sensorInterface.GetFaceModelVertices(0, ref avModelVertices);
-
-		avModelUV = new Vector2[iNumVertices];
-
-		if(!bGotModelVertices)
-			return false;
+			if(!bGotModelVertices)
+				return false;
+		}
 
 		// make vertices relative to the head pos
 		Matrix4x4 kinectToWorld = KinectManager.Instance ? KinectManager.Instance.GetKinectToWorldMatrix() : Matrix4x4.identity;
@@ -637,12 +656,23 @@ public class FacetrackingManager : MonoBehaviour
 
 		if (faceModelMesh) 
 		{
+			int iNumTriangles = sensorData.sensorInterface.GetFaceModelTrianglesCount();
+			if(iNumTriangles <= 0)
+				return false;
+
+			int[] avModelTriangles = new int[iNumTriangles];
+			bool bGotModelTriangles = sensorData.sensorInterface.GetFaceModelTriangles(mirroredModelMesh, ref avModelTriangles);
+
+			if(!bGotModelTriangles)
+				return false;
+
 			Mesh mesh = new Mesh();
 			mesh.name = "FaceMesh";
 			faceModelMesh.GetComponent<MeshFilter>().mesh = mesh;
 
 			mesh.vertices = avModelVertices;
 			//mesh.uv = avModelUV;
+
 			mesh.triangles = avModelTriangles;
 			mesh.RecalculateNormals();
 
@@ -789,5 +819,201 @@ public class FacetrackingManager : MonoBehaviour
 			}
 		}
 	}
-	
+
+	// gets face basic parameters as csv line
+	public string GetFaceParamsAsCsv()
+	{
+		// create the output string
+		StringBuilder sbBuf = new StringBuilder();
+		const char delimiter = ',';
+
+		if (bGotHeadPos || bGotHeadRot)
+		{
+			sbBuf.Append("fp").Append(delimiter);
+
+			// head pos
+			sbBuf.Append (bGotHeadPos ? "1" : "0").Append(delimiter);
+
+			if (bGotHeadPos) 
+			{
+				sbBuf.AppendFormat ("{0:F3}", headPos.x).Append (delimiter);
+				sbBuf.AppendFormat ("{0:F3}", headPos.y).Append (delimiter);
+				sbBuf.AppendFormat ("{0:F3}", headPos.z).Append (delimiter);
+			}
+
+			// head rot
+			sbBuf.Append (bGotHeadRot ? "1" : "0").Append(delimiter);
+			Vector3 vheadRot = headRot.eulerAngles;
+
+			if (bGotHeadRot) 
+			{
+				sbBuf.AppendFormat ("{0:F3}", vheadRot.x).Append (delimiter);
+				sbBuf.AppendFormat ("{0:F3}", vheadRot.y).Append (delimiter);
+				sbBuf.AppendFormat ("{0:F3}", vheadRot.z).Append (delimiter);
+			}
+
+			// face rect
+			sbBuf.Append ("1").Append(delimiter);  
+			sbBuf.AppendFormat ("{0:F0}", faceRect.x).Append (delimiter);
+			sbBuf.AppendFormat ("{0:F0}", faceRect.y).Append (delimiter);
+			sbBuf.AppendFormat ("{0:F0}", faceRect.width).Append (delimiter);
+			sbBuf.AppendFormat ("{0:F0}", faceRect.height).Append (delimiter);
+
+			// animation units
+			sbBuf.Append (bGotAU ? "1" : "0").Append(delimiter);
+
+			if (bGotAU) 
+			{
+				int enumCount = Enum.GetNames (typeof(KinectInterop.FaceShapeAnimations)).Length;
+				sbBuf.Append (enumCount).Append(delimiter);
+
+				for (int i = 0; i < enumCount; i++) 
+				{
+					float dictValue = dictAU [(KinectInterop.FaceShapeAnimations)i];
+					sbBuf.AppendFormat ("{0:F3}", dictValue).Append (delimiter);
+				}
+			}
+
+			// shape units
+			sbBuf.Append (bGotSU ? "1" : "0").Append(delimiter);
+
+			if (bGotSU) 
+			{
+				int enumCount = Enum.GetNames (typeof(KinectInterop.FaceShapeDeformations)).Length;
+				sbBuf.Append (enumCount).Append(delimiter);
+
+				for (int i = 0; i < enumCount; i++) 
+				{
+					float dictValue = dictSU [(KinectInterop.FaceShapeDeformations)i];
+					sbBuf.AppendFormat ("{0:F3}", dictValue).Append (delimiter);
+				}
+			}
+
+			// any other parameters...
+		}
+
+		// remove the last delimiter
+		if(sbBuf.Length > 0 && sbBuf[sbBuf.Length - 1] == delimiter)
+		{
+			sbBuf.Remove(sbBuf.Length - 1, 1);
+		}
+
+		return sbBuf.ToString();
+	}
+
+	// sets basic face parameters from a csv line
+	public bool SetFaceParamsFromCsv(string sCsvLine)
+	{
+		if(sCsvLine.Length == 0)
+			return false;
+
+		// split the csv line in parts
+		char[] delimiters = { ',' };
+		string[] alCsvParts = sCsvLine.Split(delimiters);
+
+		if(alCsvParts.Length < 1 || alCsvParts[0] != "fp")
+			return false;
+
+		int iIndex = 1;
+		int iLength = alCsvParts.Length;
+
+		if (iLength < (iIndex + 1))
+			return false;
+
+		// head pos
+		bGotHeadPos = (alCsvParts[iIndex] == "1");
+		iIndex++;
+
+		if (bGotHeadPos && iLength >= (iIndex + 3)) 
+		{
+			float x = 0f, y = 0f, z = 0f;
+
+			float.TryParse(alCsvParts[iIndex], out x);
+			float.TryParse(alCsvParts[iIndex + 1], out y);
+			float.TryParse(alCsvParts[iIndex + 2], out z);
+			iIndex += 3;
+
+			headPos = new Vector3(x, y, z);
+		}
+
+		// head rot
+		bGotHeadRot = (alCsvParts[iIndex] == "1");
+		iIndex++;
+
+		if (bGotHeadRot && iLength >= (iIndex + 3)) 
+		{
+			float x = 0f, y = 0f, z = 0f;
+
+			float.TryParse(alCsvParts[iIndex], out x);
+			float.TryParse(alCsvParts[iIndex + 1], out y);
+			float.TryParse(alCsvParts[iIndex + 2], out z);
+			iIndex += 3;
+
+			headRot = Quaternion.Euler(x, y, z);
+		}
+
+		// face rect
+		bool bGotFaceRect = (alCsvParts[iIndex] == "1");
+		iIndex++;
+
+		if (bGotFaceRect && iLength >= (iIndex + 4)) 
+		{
+			float x = 0f, y = 0f, w = 0f, h = 0f;
+
+			float.TryParse(alCsvParts[iIndex], out x);
+			float.TryParse(alCsvParts[iIndex + 1], out y);
+			float.TryParse(alCsvParts[iIndex + 2], out w);
+			float.TryParse(alCsvParts[iIndex + 2], out h);
+			iIndex += 4;
+
+			faceRect.x = x; faceRect.y = y;
+			faceRect.width = w; faceRect.height = h;
+		}
+
+		// animation units
+		bGotAU = (alCsvParts[iIndex] == "1");
+		iIndex++;
+
+		if (bGotAU && iLength >= (iIndex + 1)) 
+		{
+			int count = 0;
+			int.TryParse(alCsvParts[iIndex], out count);
+			iIndex++;
+
+			for (int i = 0; i < count && iLength >= (iIndex + 1); i++) 
+			{
+				float v = 0;
+				float.TryParse(alCsvParts[iIndex], out v);
+				iIndex++;
+
+				dictAU [(KinectInterop.FaceShapeAnimations)i] = v;
+			}
+		}
+
+		// shape units
+		bGotSU = (alCsvParts[iIndex] == "1");
+		iIndex++;
+
+		if (bGotSU && iLength >= (iIndex + 1)) 
+		{
+			int count = 0;
+			int.TryParse(alCsvParts[iIndex], out count);
+			iIndex++;
+
+			for (int i = 0; i < count && iLength >= (iIndex + 1); i++) 
+			{
+				float v = 0;
+				float.TryParse(alCsvParts[iIndex], out v);
+				iIndex++;
+
+				dictSU [(KinectInterop.FaceShapeDeformations)i] = v;
+			}
+		}
+
+		// any other parameters here...
+
+		return true;
+	}
+
+
 }

@@ -7,7 +7,7 @@ public class DrawCollider : MonoBehaviour
     public Collider collider;
 
     Vector3 center;
-    Vector3 size;
+    float radius;
 
     void OnDrawGizmos()
     {
@@ -16,14 +16,15 @@ public class DrawCollider : MonoBehaviour
         if (collider != null)
         {
             center = collider.bounds.center;
-            size = collider.bounds.size;
-            Gizmos.DrawWireCube(center, size);
+            radius = collider.bounds.size.x * 0.5f;
+            Gizmos.DrawWireSphere(center, radius);
         }
     }
 
 	// Use this for initialization
 	void Start ()
     {
-
+        if (collider == null)
+            collider = GetComponent<Collider>();
 	}
 }

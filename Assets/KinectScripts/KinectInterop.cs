@@ -1088,7 +1088,7 @@ public class KinectInterop
 		{
 			System.Threading.Thread.Sleep(1);
 		}
-		
+
 		// check the id, body count & joint count
 		int bodyCount = 0, jointCount = 0;
 		int.TryParse(alCsvParts[2], out bodyCount);
@@ -1099,15 +1099,24 @@ public class KinectInterop
 
 		if(alCsvParts[0] != "kb" || bodyCount == 0 || jointCount == 0 || liRelTime == 0)
 			return false;
-		if(bodyCount != sensorData.bodyCount || jointCount != sensorData.jointCount)
-			return false;
+		//		if(bodyCount != sensorData.bodyCount || jointCount != sensorData.jointCount)
+		//			return false;
+
+		if (bodyCount != sensorData.bodyCount) 
+		{
+			// set the other bodies as not tracked
+			for (int i = bodyCount; i < sensorData.bodyCount; i++) 
+			{
+				bodyFrame.bodyData[i].bIsTracked = 0;
+			}
+		}
 
 		// update body frame data
 		bodyFrame.liPreviousTime = bodyFrame.liRelativeTime;
 		bodyFrame.liRelativeTime = liRelTime;
 
 		int iIndex = 4;
-		for(int i = 0; i < sensorData.bodyCount; i++)
+		for(int i = 0; i < bodyCount; i++)
 		{
 			if(alCsvParts.Length < (iIndex + 1))
 				return false;
@@ -1135,8 +1144,17 @@ public class KinectInterop
 
 			if(bIsTracked != 0)
 			{
+				if (jointCount != sensorData.jointCount) 
+				{
+					// set the other joints as not tracked
+					for (int j = jointCount; j < sensorData.jointCount; j++) 
+					{
+						bodyFrame.bodyData [i].joint [j].trackingState = TrackingState.NotTracked;
+					}
+				}
+
 				// update joints' data
-				for(int j = 0; j < sensorData.jointCount; j++)
+				for(int j = 0; j < jointCount; j++)
 				{
 					KinectInterop.JointData jointData = bodyFrame.bodyData[i].joint[j];
 					int iTrackingState = 0;
@@ -1156,7 +1174,7 @@ public class KinectInterop
 							float.TryParse(alCsvParts[iIndex + 1], out y);
 							float.TryParse(alCsvParts[iIndex + 2], out z);
 							iIndex += 3;
-						
+
 							jointData.kinectPos = new Vector3(x, y, z);
 						}
 						else

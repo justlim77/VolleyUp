@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.UI;
 
 using System;
 using System.Collections;
@@ -17,7 +16,7 @@ public class BoneOrientationsConstraint
 	// list of joint constraints
     private readonly List<BoneOrientationConstraint> jointConstraints = new List<BoneOrientationConstraint>();
 
-	private Text debugText;
+	private GUIText debugText;
 
 	private long frameNum = 0;
 	//private float currentTime = 0f;
@@ -28,7 +27,7 @@ public class BoneOrientationsConstraint
     {
     }
 
-	public void SetDebugText(Text debugText)
+	public void SetDebugText(GUIText debugText)
 	{
 		this.debugText = debugText;
 	}
@@ -66,8 +65,8 @@ public class BoneOrientationsConstraint
 //		AddBoneOrientationConstraint((int)KinectInterop.JointType.ShoulderRight, CT.LimA, Vector3.up, -120f, 60f);  // sag
 
 		// ElbowLeft, ElbowRight
-		AddBoneOrientationConstraint((int)KinectInterop.JointType.ElbowLeft, CT.LimST, Vector3.left, 180f, 80f);
-		AddBoneOrientationConstraint((int)KinectInterop.JointType.ElbowRight, CT.LimST, Vector3.right, 180f, 80f);
+		AddBoneOrientationConstraint((int)KinectInterop.JointType.ElbowLeft, CT.LimST, Vector3.left, 180f, 180f);
+		AddBoneOrientationConstraint((int)KinectInterop.JointType.ElbowRight, CT.LimST, Vector3.right, 180f, 180f);
 
 		// WristLeft, WristRight
 		AddBoneOrientationConstraint((int)KinectInterop.JointType.WristLeft, CT.LimST, Vector3.left, 60f, 40f);
@@ -76,8 +75,8 @@ public class BoneOrientationsConstraint
 		// HandLeft, HandRight
 //		AddBoneOrientationConstraint((int)KinectInterop.JointType.HandLeft, CT.LimST, Vector3.left, 80f, 0f);
 //		AddBoneOrientationConstraint((int)KinectInterop.JointType.HandRight, CT.LimST, Vector3.left, 80f, 0f);
-		AddBoneOrientationConstraint((int)KinectInterop.JointType.HandLeft, CT.LimH, Vector3.forward, 0f, -80f);
-		AddBoneOrientationConstraint((int)KinectInterop.JointType.HandRight, CT.LimH, Vector3.forward, 0f, 80f);
+		AddBoneOrientationConstraint((int)KinectInterop.JointType.HandLeft, CT.LimH, Vector3.forward, -5f, -80f);
+		AddBoneOrientationConstraint((int)KinectInterop.JointType.HandRight, CT.LimH, Vector3.forward, 5f, 80f);
 
 		// HipLeft, HipRight
 		AddBoneOrientationConstraint((int)KinectInterop.JointType.HipLeft, CT.LimST, Vector3.down, 120f, 0f);

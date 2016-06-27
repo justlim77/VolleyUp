@@ -5,6 +5,9 @@ using System;
 
 public class CubeGestureListener : MonoBehaviour, KinectGestures.GestureListenerInterface
 {
+	[Tooltip("Index of the player, tracked by this component. 0 means the 1st player, 1 - the 2nd one, 2 - the 3rd one, etc.")]
+	public int playerIndex = 0;
+
 	[Tooltip("GUI-Text to display gesture-listener messages and gesture information.")]
 	public GUIText gestureInfo;
 
@@ -88,7 +91,7 @@ public class CubeGestureListener : MonoBehaviour, KinectGestures.GestureListener
 	{
 		// the gestures are allowed for the primary user only
 		KinectManager manager = KinectManager.Instance;
-		if(!manager || (userId != manager.GetPrimaryUserID()))
+		if(!manager || (userIndex != playerIndex))
 			return;
 		
 		// detect these user specific gestures
@@ -110,8 +113,7 @@ public class CubeGestureListener : MonoBehaviour, KinectGestures.GestureListener
 	public void UserLost(long userId, int userIndex)
 	{
 		// the gestures are allowed for the primary user only
-		KinectManager manager = KinectManager.Instance;
-		if(!manager || (userId != manager.GetPrimaryUserID()))
+		if(userIndex != playerIndex)
 			return;
 		
 		if(gestureInfo != null)
@@ -133,8 +135,7 @@ public class CubeGestureListener : MonoBehaviour, KinectGestures.GestureListener
 	                              float progress, KinectInterop.JointType joint, Vector3 screenPos)
 	{
 		// the gestures are allowed for the primary user only
-		KinectManager manager = KinectManager.Instance;
-		if(!manager || (userId != manager.GetPrimaryUserID()))
+		if(userIndex != playerIndex)
 			return;
 
 		if((gesture == KinectGestures.Gestures.ZoomOut || gesture == KinectGestures.Gestures.ZoomIn) && progress > 0.5f)
@@ -187,8 +188,7 @@ public class CubeGestureListener : MonoBehaviour, KinectGestures.GestureListener
 	                              KinectInterop.JointType joint, Vector3 screenPos)
 	{
 		// the gestures are allowed for the primary user only
-		KinectManager manager = KinectManager.Instance;
-		if(!manager || (userId != manager.GetPrimaryUserID()))
+		if(userIndex != playerIndex)
 			return false;
 		
 		if(gestureInfo != null)
@@ -220,8 +220,7 @@ public class CubeGestureListener : MonoBehaviour, KinectGestures.GestureListener
 	                              KinectInterop.JointType joint)
 	{
 		// the gestures are allowed for the primary user only
-		KinectManager manager = KinectManager.Instance;
-		if(!manager || (userId != manager.GetPrimaryUserID()))
+		if(userIndex != playerIndex)
 			return false;
 		
 		if(progressDisplayed)

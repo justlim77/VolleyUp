@@ -1,60 +1,69 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class AlphaTexToImage : MonoBehaviour 
+public class ForegroundBlender : MonoBehaviour 
 {
-	[Tooltip("Foreground material applied to the detected users' silhouettes.")]
-	public Material foregroundMaterial;
-
-	private RenderTexture texOutput;
+	[Tooltip("Background texture that will be rendered over the foreground of detected users.")]
+	public Texture backgroundTexture;
 
 
-	void Start()
+	private Material foregroundBlendMat;
+	private KinectManager kinectManager;
+	private BackgroundRemovalManager backManager;
+	private long lastDepthFrameTime;
+
+
+	void Start () 
 	{
-		// create the output texture
-		KinectManager kinectManager = KinectManager.Instance;
-		if(kinectManager && kinectManager.IsInitialized())
+		kinectManager = KinectManager.Instance;
+
+		if(kinectManager && kinectManager.IsInitialized() && backgroundTexture)
 		{
-			texOutput = new RenderTexture(kinectManager.GetColorImageWidth(), kinectManager.GetColorImageHeight(), 0);
-			texOutput.wrapMode = TextureWrapMode.Clamp;
+			Shader foregoundBlendShader = Shader.Find("Custom/ForegroundBlendShader");
+
+			if(foregoundBlendShader != null)
+			{
+				foregroundBlendMat = new Material(foregoundBlendShader);
+
+				foregroundBlendMat.SetInt ("_ColorFlipH", 0);
+				foregroundBlendMat.SetInt ("_ColorFlipV", 1);
+			}
 		}
 	}
 
 	void OnDestroy()
 	{
-		// release the output texture
-		if(texOutput)
-		{
-			texOutput.Release();
-			texOutput = null;
-		}
 	}
 
 	void Update () 
 	{
-		if(texOutput)
+		if(foregroundBlendMat && backgroundTexture && 
+			kinectManager && kinectManager.IsInitialized())
 		{
-			// blit the output texture
-			BackgroundRemovalManager backManager = BackgroundRemovalManager.Instance;
-			if(backManager && backManager.IsBackgroundRemovalInitialized())
+			if (!backManager) 
 			{
-				if(foregroundMaterial)
-				{
-					foregroundMaterial.SetTexture("_BodyTex", backManager.GetAlphaBodyTex());
-					Graphics.Blit(null, texOutput, foregroundMaterial, 0);
-				}
-				else
-				{
-					Graphics.Blit(backManager.GetAlphaBodyTex(), texOutput);
-				}
+				backManager = BackgroundRemovalManager.Instance;
 			}
 
-			// set the gui texture, if needed
-			GUITexture guiTexture = GetComponent<GUITexture>();
-			if(guiTexture && guiTexture.texture == null)
+			Texture alphaBodyTex = backManager ? backManager.GetAlphaBodyTex () : null;
+			KinectInterop.SensorData sensorData = kinectManager.GetSensorData();
+
+			if(backManager && backManager.IsBackgroundRemovalInitialized() && 
+				alphaBodyTex && backgroundTexture && lastDepthFrameTime != sensorData.lastDepthFrameTime)
 			{
-				guiTexture.texture = texOutput;
+				lastDepthFrameTime = sensorData.lastDepthFrameTime;
+				foregroundBlendMat.SetTexture("_BodyTex", alphaBodyTex);
 			}
+
+			foregroundBlendMat.SetTexture("_ColorTex", backgroundTexture);
+		}
+	}
+
+	void OnRenderImage (RenderTexture source, RenderTexture destination)
+	{
+		if(foregroundBlendMat != null)
+		{
+			Graphics.Blit(source, destination, foregroundBlendMat);
 		}
 	}
 

@@ -3,6 +3,9 @@ using System.Collections;
 
 public class SimpleVisualGestureListener : MonoBehaviour, VisualGestureListenerInterface
 {
+	[Tooltip("Index of the player, tracked by this component. 0 means the 1st player, 1 - the 2nd one, 2 - the 3rd one, etc.")]
+	public int playerIndex = 0;
+
 	[Tooltip("GUI-Text to display the discrete gesture information.")]
 	public GUIText discreteInfo;
 
@@ -19,10 +22,13 @@ public class SimpleVisualGestureListener : MonoBehaviour, VisualGestureListenerI
 
 	public void GestureInProgress(long userId, int userIndex, string gesture, float progress)
 	{
+		if (userIndex != playerIndex)
+			return;
+		
 		if(continuousInfo != null)
 		{
 			string sGestureText = string.Format ("{0} {1:F0}%", gesture, progress * 100f);
-			continuousInfo.GetComponent<GUIText>().text = sGestureText;
+			continuousInfo.text = sGestureText;
 
 			continuousGestureDisplayed = true;
 			continuousGestureTime = Time.realtimeSinceStartup;
@@ -31,10 +37,13 @@ public class SimpleVisualGestureListener : MonoBehaviour, VisualGestureListenerI
 
 	public bool GestureCompleted(long userId, int userIndex, string gesture, float confidence)
 	{
+		if (userIndex != playerIndex)
+			return false;
+
 		if(discreteInfo != null)
 		{
 			string sGestureText = string.Format ("{0}-gesture detected, confidence: {1:F0}%", gesture, confidence * 100f);
-			discreteInfo.GetComponent<GUIText>().text = sGestureText;
+			discreteInfo.text = sGestureText;
 
 			discreteGestureDisplayed = true;
 			discreteGestureTime = Time.realtimeSinceStartup;
@@ -47,23 +56,23 @@ public class SimpleVisualGestureListener : MonoBehaviour, VisualGestureListenerI
 	public void Update()
 	{
 		// clear gesture infos after a while
-		if(continuousGestureDisplayed && ((Time.realtimeSinceStartup - continuousGestureTime) > 1f))
+		if(continuousGestureDisplayed && ((Time.realtimeSinceStartup - continuousGestureTime) > 2f))
 		{
 			continuousGestureDisplayed = false;
 
 			if(continuousInfo != null)
 			{
-				continuousInfo.GetComponent<GUIText>().text = string.Empty;
+				continuousInfo.text = string.Empty;
 			}
 		}
 
-		if(discreteGestureDisplayed && ((Time.realtimeSinceStartup - discreteGestureTime) > 1f))
+		if(discreteGestureDisplayed && ((Time.realtimeSinceStartup - discreteGestureTime) > 2f))
 		{
 			discreteGestureDisplayed = false;
 			
 			if(discreteInfo != null)
 			{
-				discreteInfo.GetComponent<GUIText>().text = string.Empty;
+				discreteInfo.text = string.Empty;
 			}
 		}
 	}

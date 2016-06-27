@@ -216,34 +216,32 @@ public class PointmanController : MonoBehaviour
 
 					if(lines[i] != null && i > 0)
 					{
-						lines[i].gameObject.SetActive(true);
-
 						int jParent = (int)manager.GetParentJoint((KinectInterop.JointType)joint);
-						Vector3 posJoint2 = manager.GetJointPosition(userID, jParent);
-						posJoint2.z = !mirroredMovement ? -posJoint2.z : posJoint2.z;
 
-						posJoint2 += originPosition;
-						posJoint2 -= posPointManHips;
-						
-						if(mirroredMovement)
+						if(manager.IsJointTracked(userID, jParent))
 						{
-							posJoint2.x = -posJoint2.x;
-							posJoint2.z = -posJoint2.z;
+							lines[i].gameObject.SetActive(true);
+
+							Vector3 posJoint2 = manager.GetJointPosition(userID, jParent);
+							posJoint2.z = !mirroredMovement ? -posJoint2.z : posJoint2.z;
+
+							posJoint2 += originPosition;
+							posJoint2 -= posPointManHips;
+
+							if(mirroredMovement)
+							{
+								posJoint2.x = -posJoint2.x;
+								posJoint2.z = -posJoint2.z;
+							}
+
+							Vector3 dirFromParent = posJoint - posJoint2;
+
+							lines[i].transform.localPosition = posJoint2 + dirFromParent / 2f;
+							lines[i].transform.up = transform.rotation * dirFromParent.normalized;
+
+							Vector3 lineScale = lines[i].transform.localScale;
+							lines[i].transform.localScale = new Vector3(lineScale.x, dirFromParent.magnitude / 2f, lineScale.z);
 						}
-						
-						//Vector3 dirFromParent = manager.GetJointDirection(userID, joint, false, false);
-						//dirFromParent.z = !mirroredMovement ? -dirFromParent.z : dirFromParent.z;
-						//Vector3 posParent = posJoint2 - dirFromParent;
-						Vector3 dirFromParent = posJoint - posJoint2;
-
-//						//lines[i].SetVertexCount(2);
-//						lines[i].SetPosition(0, posParent);
-//						lines[i].SetPosition(1, posJoint2);
-						lines[i].transform.localPosition = posJoint2 + dirFromParent / 2f;
-						lines[i].transform.up = transform.rotation * dirFromParent.normalized;
-
-						Vector3 lineScale = lines[i].transform.localScale;
-						lines[i].transform.localScale = new Vector3(lineScale.x, dirFromParent.magnitude / 2f, lineScale.z);
 					}
 
 				}

@@ -5,6 +5,9 @@ using System;
 
 public class ModelGestureListener : MonoBehaviour, KinectGestures.GestureListenerInterface
 {
+	[Tooltip("Index of the player, tracked by this component. 0 means the 1st player, 1 - the 2nd one, 2 - the 3rd one, etc.")]
+	public int playerIndex = 0;
+
 	[Tooltip("GUI-Text to display gesture-listener messages and gesture information.")]
 	public GUIText gestureInfo;
 
@@ -108,7 +111,7 @@ public class ModelGestureListener : MonoBehaviour, KinectGestures.GestureListene
 	{
 		// the gestures are allowed for the primary user only
 		KinectManager manager = KinectManager.Instance;
-		if(!manager || (userId != manager.GetPrimaryUserID()))
+		if(!manager || (userIndex != playerIndex))
 			return;
 		
 		// detect these user specific gestures
@@ -133,8 +136,7 @@ public class ModelGestureListener : MonoBehaviour, KinectGestures.GestureListene
 	public void UserLost(long userId, int userIndex)
 	{
 		// the gestures are allowed for the primary user only
-		KinectManager manager = KinectManager.Instance;
-		if(!manager || (userId != manager.GetPrimaryUserID()))
+		if(userIndex != playerIndex)
 			return;
 		
 		if(gestureInfo != null)
@@ -156,8 +158,7 @@ public class ModelGestureListener : MonoBehaviour, KinectGestures.GestureListene
 	                              float progress, KinectInterop.JointType joint, Vector3 screenPos)
 	{
 		// the gestures are allowed for the primary user only
-		KinectManager manager = KinectManager.Instance;
-		if(!manager || (userId != manager.GetPrimaryUserID()))
+		if(userIndex != playerIndex)
 			return;
 
 		if(gesture == KinectGestures.Gestures.ZoomOut)
@@ -238,6 +239,10 @@ public class ModelGestureListener : MonoBehaviour, KinectGestures.GestureListene
 	public bool GestureCompleted (long userId, int userIndex, KinectGestures.Gestures gesture, 
 	                              KinectInterop.JointType joint, Vector3 screenPos)
 	{
+		// the gestures are allowed for the primary user only
+		if(userIndex != playerIndex)
+			return false;
+
 		if(gesture == KinectGestures.Gestures.RaiseLeftHand)
 			raiseHand = true;
 		else if(gesture == KinectGestures.Gestures.RaiseRightHand)
@@ -259,8 +264,7 @@ public class ModelGestureListener : MonoBehaviour, KinectGestures.GestureListene
 	                              KinectInterop.JointType joint)
 	{
 		// the gestures are allowed for the primary user only
-		KinectManager manager = KinectManager.Instance;
-		if(!manager || (userId != manager.GetPrimaryUserID()))
+		if(userIndex != playerIndex)
 			return false;
 		
 		if(gesture == KinectGestures.Gestures.ZoomOut)

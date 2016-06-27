@@ -17,6 +17,7 @@ public class SetFaceTexture : MonoBehaviour
 	private Texture2D colorTex, faceTex;
 	private KinectManager kinectManager;
 	private FacetrackingManager faceManager;
+	private BackgroundRemovalManager backManager;
 
 	//private const int pixelAlignment = -2;  // must be negative power of 2
 
@@ -63,7 +64,42 @@ public class SetFaceTexture : MonoBehaviour
 		if(userId == 0)
 			return;
 
-		colorTex = kinectManager.GetUsersClrTex();
+		if (!backManager) 
+		{
+			backManager = BackgroundRemovalManager.Instance;
+
+			if (backManager) 
+			{
+				// re-initialize the texture
+				colorTex = null;
+			}
+		}
+
+		if (backManager && backManager.IsBackgroundRemovalInitialized ()) 
+		{
+			// use foreground image
+			if (!colorTex) 
+			{
+				colorTex = new Texture2D (kinectManager.GetColorImageWidth (), kinectManager.GetColorImageHeight (), TextureFormat.ARGB32, false);
+			}
+
+			try 
+			{
+				RenderTexture foregroundTex = (RenderTexture)backManager.GetForegroundTex ();
+				KinectInterop.RenderTex2Tex2D (foregroundTex, ref colorTex);
+
+			} 
+			catch (System.Exception) 
+			{
+				colorTex = (Texture2D)backManager.GetForegroundTex ();
+			}
+		} 
+		else 
+		{
+			// use color camera image
+			colorTex = kinectManager.GetUsersClrTex();
+		}
+
 		//faceRect = faceManager.GetFaceColorRect(userId);
 		faceRect = GetHeadJointFaceRect(userId);
 

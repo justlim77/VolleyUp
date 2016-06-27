@@ -1010,6 +1010,8 @@ public class Kinect1Interface : DepthSensorInterface
 		
 		if (newColor)
 		{
+			sensorData.lastColorFrameTime = DateTime.Now.Ticks;
+
 			for (int i = 0; i < videoBufLen; i += 4)
 			{
 				byte btTmp = sensorData.colorImage[i];
@@ -1032,6 +1034,7 @@ public class Kinect1Interface : DepthSensorInterface
 
 		if(newDepth)
 		{
+			sensorData.lastDepthFrameTime = sensorData.lastBodyIndexFrameTime = DateTime.Now.Ticks;
 			uint depthLen = (uint)sensorData.depthImage.Length;
 
 			for (int i = 0; i < depthLen; i++)
@@ -1055,6 +1058,11 @@ public class Kinect1Interface : DepthSensorInterface
 		var pInfraredData = GCHandle.Alloc(sensorData.infraredImage, GCHandleType.Pinned);
 		bool newInfrared = GetInfraredFrameData(pInfraredData.AddrOfPinnedObject(), ref infraredBufLen, true);
 		pInfraredData.Free();
+
+		if (newInfrared) 
+		{
+			sensorData.lastInfraredFrameTime = DateTime.Now.Ticks;
+		}
 		
 		return newInfrared;
 	}

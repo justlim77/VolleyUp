@@ -3,7 +3,6 @@
 
 
 using UnityEngine;
-using UnityEngine.UI;
 
 using System;
 using System.Collections;
@@ -14,7 +13,7 @@ using System.Collections.Generic;
 /// </summary>
 public class KinectManager : MonoBehaviour 
 {
-	[Tooltip("How high off the ground is the sensor (in meters).")]
+	[Tooltip("How high above the ground is the sensor, in meters.")]
 	public float sensorHeight = 1.0f;
 
 	[Tooltip("Kinect elevation angle (in degrees). May be positive or negative.")]
@@ -116,8 +115,8 @@ public class KinectManager : MonoBehaviour
 	[Tooltip("List of the available gesture listeners. They must implement KinectGestures.GestureListenerInterface. If the list is empty, the available gesture listeners will be detected at start up.")]
 	public List<MonoBehaviour> gestureListeners = new List<MonoBehaviour>();
 
-	[Tooltip("Text to display user detection messages.")]
-	public Text calibrationText;
+	[Tooltip("GUI-Text to display user detection messages.")]
+	public GUIText calibrationText;
 	
 	[Tooltip("GUI-Text to display debug messages for the currently tracked gestures.")]
 	public GUIText gesturesDebugText;
@@ -3480,32 +3479,67 @@ public class KinectManager : MonoBehaviour
 						(joint == (int)KinectInterop.JointType.WristLeft) ||
 						(joint == (int)KinectInterop.JointType.HandLeft)) 
 					{
-						KinectInterop.JointData shCenterData = bodyData.joint [(int)KinectInterop.JointType.SpineShoulder];
-						if (shCenterData.trackingState != KinectInterop.TrackingState.NotTracked &&
-							jointDir != Vector3.zero && shCenterData.direction != Vector3.zero &&
-							Mathf.Abs (Vector3.Dot (-jointDir, shCenterData.direction.normalized)) < 0.5f) 
+						if (bNextJointValid && jointData.direction != Vector3.zero && jointDir != Vector3.zero)
 						{
-							Vector3 spineDir = shCenterData.direction;
-							spineDir = new Vector3 (spineDir.x, spineDir.y, -spineDir.z).normalized;
+							Vector3 parJointDir = jointData.direction.normalized;
+							parJointDir = new Vector3 (parJointDir.x, parJointDir.y, -parJointDir.z).normalized;
 
-							Vector3 fwdDir = Vector3.Cross (-jointDir, spineDir).normalized;
-							Vector3 upDir = Vector3.Cross (fwdDir, -jointDir).normalized;
-							jointOrientNormal = Quaternion.LookRotation (fwdDir, upDir);
+							if (joint == (int)KinectInterop.JointType.WristLeft) 
+							{
+								// for wrist, take the finger direction into account, too
+								int fingerJoint = (int)sensorData.sensorInterface.GetNextJoint((KinectInterop.JointType)nextJoint);
+
+								if (fingerJoint != joint && fingerJoint >= 0 && fingerJoint < sensorData.jointCount) 
+								{
+									KinectInterop.JointData fingerData = bodyData.joint [fingerJoint];
+									if (fingerData.trackingState != KinectInterop.TrackingState.NotTracked) 
+									{
+										jointDir = (nextJointData.direction + fingerData.direction).normalized;
+										jointDir = new Vector3 (jointDir.x, jointDir.y, -jointDir.z).normalized;
+									}
+								}
+							}
+
+							float parDotJoint = Vector3.Dot (parJointDir, jointDir);
+							//Debug.Log (joint + ": " + parDotJoint);
+
+							if (Mathf.Abs(parDotJoint) <= 0.9f ||
+								bodyData.joint[(int)KinectInterop.JointType.SpineShoulder].trackingState == KinectInterop.TrackingState.NotTracked) 
+							{
+								Vector3 upDir = -Vector3.Cross (-parJointDir, jointDir).normalized;
+								Vector3 fwdDir = Vector3.Cross (-jointDir, upDir).normalized;
+								jointOrientNormal = Quaternion.LookRotation (fwdDir, upDir);
+							} 
+							else 
+							{
+								KinectInterop.JointData shCenterData = bodyData.joint[(int)KinectInterop.JointType.SpineShoulder];
+
+								Vector3 spineDir = shCenterData.direction.normalized;
+								spineDir = new Vector3 (spineDir.x, spineDir.y, -spineDir.z).normalized;
+
+								Vector3 fwdDir = Vector3.Cross (-jointDir, spineDir).normalized;
+								Vector3 upDir = Vector3.Cross (fwdDir, -jointDir).normalized;
+								jointOrientNormal = Quaternion.LookRotation (fwdDir, upDir);
+							}
+
+							jointData.normalRotation = jointOrientNormal;
 						}
 
-						if (joint == (int)KinectInterop.JointType.WristLeft) 
+						// check for 'allowedHandRotations = None'
+						bool bRotated = (allowedHandRotations == AllowedRotations.None) && (joint != (int)KinectInterop.JointType.ElbowLeft);
+						if (bRotated) 
 						{
-							Vector3 parBaseDir = KinectInterop.JointBaseDir [joint];  // limit wrist swing
-							Vector3 parJointDir = jointData.direction;
-							parJointDir.z = -parJointDir.z;
+							// in case of 'allowedHandRotations = None' take the parent's orientation
+							int prevJoint = (int)sensorData.sensorInterface.GetParentJoint((KinectInterop.JointType)joint);
 
-							Quaternion parNormalRot = Quaternion.FromToRotation (parBaseDir, parJointDir);
-							jointOrientNormal = Quaternion.RotateTowards (parNormalRot, jointOrientNormal, 80f);
+							if (prevJoint != joint && prevJoint >= 0 && prevJoint < sensorData.jointCount) 
+							{
+								jointData.normalRotation = bodyData.joint[prevJoint].normalRotation;
+							}
 						}
 
-						bool bRotated = (allowedHandRotations == AllowedRotations.None) &&
-										(joint != (int)KinectInterop.JointType.ElbowLeft);
-						if ((allowedHandRotations == AllowedRotations.All || (joint == (int)KinectInterop.JointType.HandLeft && !bRotated)) &&
+						if (((allowedHandRotations == AllowedRotations.All && joint != (int)KinectInterop.JointType.ElbowLeft) || 
+							(joint == (int)KinectInterop.JointType.HandLeft && !bRotated)) &&
 							(sensorData.sensorIntPlatform == KinectInterop.DepthSensorPlatform.KinectSDKv2 ||
 							sensorData.sensorIntPlatform == KinectInterop.DepthSensorPlatform.DummyK2))
 						{						   
@@ -3514,12 +3548,13 @@ public class KinectManager : MonoBehaviour
 							int prevJoint = (int)sensorData.sensorInterface.GetParentJoint ((KinectInterop.JointType)joint);
 							KinectInterop.JointData prevJointData = bodyData.joint [prevJoint];
 
-							if (thumbData.trackingState != KinectInterop.TrackingState.NotTracked) 
+							if (thumbData.trackingState != KinectInterop.TrackingState.NotTracked &&
+								prevJointData.trackingState != KinectInterop.TrackingState.NotTracked) 
 							{
-								Vector3 rightDir = -nextJointData.direction; // -(handData.direction + handTipData.direction);
-								rightDir = new Vector3 (rightDir.x, rightDir.y, -rightDir.z).normalized;
+								Vector3 rightDir = -jointDir; // -(handData.direction + handTipData.direction);
+								//rightDir = new Vector3 (rightDir.x, rightDir.y, -rightDir.z).normalized;
 
-								Vector3 fwdDir = thumbData.direction;
+								Vector3 fwdDir = thumbData.direction.normalized;
 								fwdDir = new Vector3 (fwdDir.x, fwdDir.y, -fwdDir.z).normalized;
 
 								if (joint == (int)KinectInterop.JointType.HandLeft) 
@@ -3527,7 +3562,7 @@ public class KinectManager : MonoBehaviour
 									Vector3 prevBaseDir = -KinectInterop.JointBaseDir[prevJoint];
 									Vector3 prevOrthoDir = new Vector3 (prevBaseDir.y, prevBaseDir.z, prevBaseDir.x);
 									fwdDir = prevJointData.normalRotation * prevOrthoDir;
-									rightDir -= Vector3.Project(rightDir, fwdDir);
+									//rightDir -= Vector3.Project(rightDir, fwdDir);
 								}
 
 								if (rightDir != Vector3.zero && fwdDir != Vector3.zero) 
@@ -3539,6 +3574,7 @@ public class KinectManager : MonoBehaviour
 									Quaternion jointOrientThumb = Quaternion.LookRotation (fwdDir, upDir);
 									jointOrientNormal = (joint == (int)KinectInterop.JointType.WristLeft) ?
 										Quaternion.RotateTowards (prevJointData.normalRotation, jointOrientThumb, 80f) : jointOrientThumb;
+									
 									jointData.normalRotation = jointOrientNormal;
 									//bRotated = true;
 								}
@@ -3547,47 +3583,85 @@ public class KinectManager : MonoBehaviour
 							bRotated = true;
 						}
 
-						if (!bRotated) 
+						if (joint != (int)KinectInterop.JointType.ElbowLeft) 
 						{
-//							float angle = -bodyData.bodyTurnAngle;
-//							Vector3 axis = jointDir;
-//							Quaternion armTurnRotation = Quaternion.AngleAxis(angle, axis);
-							Quaternion armTurnRotation = Quaternion.identity;
+							// limit wrist and hand twist
+							int prevJoint = (int)sensorData.sensorInterface.GetParentJoint ((KinectInterop.JointType)joint);
+							KinectInterop.JointData prevJointData = bodyData.joint [prevJoint];
 
-							jointData.normalRotation = //(allowedHandRotations != AllowedRotations.None || joint == (int)KinectInterop.JointType.ElbowLeft) ? 
-								armTurnRotation * jointOrientNormal; // : armTurnRotation;
+							if (prevJointData.trackingState != KinectInterop.TrackingState.NotTracked) 
+							{
+								jointData.normalRotation = Quaternion.RotateTowards (prevJointData.normalRotation, jointData.normalRotation, 70f);
+							}
 						}
+
 					} 
 					else if ((joint == (int)KinectInterop.JointType.ElbowRight) ||
 						(joint == (int)KinectInterop.JointType.WristRight) ||
 						(joint == (int)KinectInterop.JointType.HandRight)) 
 					{
-						KinectInterop.JointData shCenterData = bodyData.joint [(int)KinectInterop.JointType.SpineShoulder];
-						if (shCenterData.trackingState != KinectInterop.TrackingState.NotTracked &&
-							jointDir != Vector3.zero && shCenterData.direction != Vector3.zero &&
-							Mathf.Abs (Vector3.Dot (jointDir, shCenterData.direction.normalized)) < 0.5f) 
+						if (bNextJointValid && jointData.direction != Vector3.zero && jointDir != Vector3.zero)
 						{
-							Vector3 spineDir = shCenterData.direction;
-							spineDir = new Vector3 (spineDir.x, spineDir.y, -spineDir.z).normalized;
+							Vector3 parJointDir = jointData.direction.normalized;
+							parJointDir = new Vector3 (parJointDir.x, parJointDir.y, -parJointDir.z).normalized;
 
-							Vector3 fwdDir = Vector3.Cross (jointDir, spineDir).normalized;
-							Vector3 upDir = Vector3.Cross (fwdDir, jointDir).normalized;
-							jointOrientNormal = Quaternion.LookRotation (fwdDir, upDir);
+							if (joint == (int)KinectInterop.JointType.WristRight) 
+							{
+								// for wrist, take the finger direction into account, too
+								int fingerJoint = (int)sensorData.sensorInterface.GetNextJoint((KinectInterop.JointType)nextJoint);
+
+								if (fingerJoint != joint && fingerJoint >= 0 && fingerJoint < sensorData.jointCount) 
+								{
+									KinectInterop.JointData fingerData = bodyData.joint [fingerJoint];
+									if (fingerData.trackingState != KinectInterop.TrackingState.NotTracked) 
+									{
+										jointDir = (nextJointData.direction + fingerData.direction).normalized;
+										jointDir = new Vector3 (jointDir.x, jointDir.y, -jointDir.z).normalized;
+									}
+								}
+							}
+
+							// estimate the joint orientation
+							float parDotJoint = Vector3.Dot (parJointDir, jointDir);
+							//Debug.Log (joint + ": " + parDotJoint);
+
+							if (Mathf.Abs(parDotJoint) <= 0.9f ||
+								bodyData.joint[(int)KinectInterop.JointType.SpineShoulder].trackingState == KinectInterop.TrackingState.NotTracked) 
+							{
+								Vector3 upDir = -Vector3.Cross (parJointDir, jointDir).normalized;
+								Vector3 fwdDir = Vector3.Cross (jointDir, upDir).normalized;
+								jointOrientNormal = Quaternion.LookRotation (fwdDir, upDir);
+							} 
+							else 
+							{
+								KinectInterop.JointData shCenterData = bodyData.joint[(int)KinectInterop.JointType.SpineShoulder];
+
+								Vector3 spineDir = shCenterData.direction.normalized;
+								spineDir = new Vector3 (spineDir.x, spineDir.y, -spineDir.z).normalized;
+
+								Vector3 fwdDir = Vector3.Cross (jointDir, spineDir).normalized;
+								Vector3 upDir = Vector3.Cross (fwdDir, jointDir).normalized;
+								jointOrientNormal = Quaternion.LookRotation (fwdDir, upDir);
+							}
+
+							jointData.normalRotation = jointOrientNormal;
 						}
 
-						if (joint == (int)KinectInterop.JointType.WristRight) 
+						// check for 'allowedHandRotations = None'
+						bool bRotated = (allowedHandRotations == AllowedRotations.None) && (joint != (int)KinectInterop.JointType.ElbowRight);
+						if (bRotated) 
 						{
-							Vector3 parBaseDir = KinectInterop.JointBaseDir [joint];
-							Vector3 parJointDir = jointData.direction;
-							parJointDir.z = -parJointDir.z;
+							// in case of 'allowedHandRotations = None' take the parent's orientation
+							int prevJoint = (int)sensorData.sensorInterface.GetParentJoint((KinectInterop.JointType)joint);
 
-							Quaternion parNormalRot = Quaternion.FromToRotation (parBaseDir, parJointDir);
-							jointOrientNormal = Quaternion.RotateTowards (parNormalRot, jointOrientNormal, 80f);
+							if (prevJoint != joint && prevJoint >= 0 && prevJoint < sensorData.jointCount) 
+							{
+								jointData.normalRotation = bodyData.joint[prevJoint].normalRotation;
+							}
 						}
 
-						bool bRotated = (allowedHandRotations == AllowedRotations.None) &&
-										(joint != (int)KinectInterop.JointType.ElbowRight);
-						if ((allowedHandRotations == AllowedRotations.All || (joint == (int)KinectInterop.JointType.HandRight && !bRotated)) &&
+						if (((allowedHandRotations == AllowedRotations.All && joint != (int)KinectInterop.JointType.ElbowRight) || 
+							(joint == (int)KinectInterop.JointType.HandRight && !bRotated)) &&
 							(sensorData.sensorIntPlatform == KinectInterop.DepthSensorPlatform.KinectSDKv2 ||
 							 sensorData.sensorIntPlatform == KinectInterop.DepthSensorPlatform.DummyK2))
 						{
@@ -3596,12 +3670,13 @@ public class KinectManager : MonoBehaviour
 							int prevJoint = (int)sensorData.sensorInterface.GetParentJoint ((KinectInterop.JointType)joint);
 							KinectInterop.JointData prevJointData = bodyData.joint [prevJoint];
 
-							if (thumbData.trackingState != KinectInterop.TrackingState.NotTracked) 
+							if (thumbData.trackingState != KinectInterop.TrackingState.NotTracked &&
+								prevJointData.trackingState != KinectInterop.TrackingState.NotTracked) 
 							{
-								Vector3 rightDir = nextJointData.direction; // handData.direction + handTipData.direction;
-								rightDir = new Vector3 (rightDir.x, rightDir.y, -rightDir.z).normalized;
+								Vector3 rightDir = jointDir; // handData.direction + handTipData.direction;
+								//rightDir = new Vector3 (rightDir.x, rightDir.y, -rightDir.z).normalized;
 
-								Vector3 fwdDir = thumbData.direction;
+								Vector3 fwdDir = thumbData.direction.normalized;
 								fwdDir = new Vector3 (fwdDir.x, fwdDir.y, -fwdDir.z).normalized;
 
 								if (joint == (int)KinectInterop.JointType.HandRight) 
@@ -3609,7 +3684,7 @@ public class KinectManager : MonoBehaviour
 									Vector3 prevBaseDir = KinectInterop.JointBaseDir[prevJoint];
 									Vector3 prevOrthoDir = new Vector3 (prevBaseDir.y, prevBaseDir.z, prevBaseDir.x);
 									fwdDir = prevJointData.normalRotation * prevOrthoDir;
-									rightDir -= Vector3.Project(rightDir, fwdDir);
+									//rightDir -= Vector3.Project(rightDir, fwdDir);
 								}
 
 								if (rightDir != Vector3.zero && fwdDir != Vector3.zero) 
@@ -3617,10 +3692,10 @@ public class KinectManager : MonoBehaviour
 									Vector3 upDir = Vector3.Cross (fwdDir, rightDir).normalized;
 									fwdDir = Vector3.Cross (rightDir, upDir).normalized;
 
-									//jointData.normalRotation = Quaternion.LookRotation(fwdDir, upDir);
 									Quaternion jointOrientThumb = Quaternion.LookRotation (fwdDir, upDir);
 									jointOrientNormal = (joint == (int)KinectInterop.JointType.WristRight) ?
 										Quaternion.RotateTowards (prevJointData.normalRotation, jointOrientThumb, 80f) : jointOrientThumb;
+									
 									jointData.normalRotation = jointOrientNormal;
 									//bRotated = true;
 								}
@@ -3629,17 +3704,19 @@ public class KinectManager : MonoBehaviour
 							bRotated = true;
 						}
 
-						if (!bRotated) 
+						if (joint != (int)KinectInterop.JointType.ElbowRight) 
 						{
-//							float angle = -bodyData.bodyTurnAngle;
-//							Vector3 axis = jointDir;
-//							Quaternion armTurnRotation = Quaternion.AngleAxis(angle, axis);
-							Quaternion armTurnRotation = Quaternion.identity;
+							// limit wrist and hand twist
+							int prevJoint = (int)sensorData.sensorInterface.GetParentJoint ((KinectInterop.JointType)joint);
+							KinectInterop.JointData prevJointData = bodyData.joint [prevJoint];
 
-							jointData.normalRotation = //(allowedHandRotations != AllowedRotations.None || joint == (int)KinectInterop.JointType.ElbowRight) ? 
-								armTurnRotation * jointOrientNormal; // : armTurnRotation;
+							if (prevJointData.trackingState != KinectInterop.TrackingState.NotTracked) 
+							{
+								jointData.normalRotation = Quaternion.RotateTowards (prevJointData.normalRotation, jointData.normalRotation, 70f);
+							}
 						}
-					} 
+
+					}
 					else
 					{
 						jointData.normalRotation = jointOrientNormal;
@@ -3918,6 +3995,64 @@ public class KinectManager : MonoBehaviour
 
 		return false;
 	}
-	
+
+	/// <summary>
+	/// Refreshs the gesture listeners' list.
+	/// </summary>
+	public void refreshGestureListeners()
+	{
+		
+		// locate the available gesture listeners
+		gestureListeners.Clear();
+
+		MonoBehaviour[] monoScripts = FindObjectsOfType(typeof(MonoBehaviour)) as MonoBehaviour[];
+
+		foreach(MonoBehaviour monoScript in monoScripts)
+		{
+			if(typeof(KinectGestures.GestureListenerInterface).IsAssignableFrom(monoScript.GetType()) &&
+				monoScript.enabled)
+			{
+				//KinectGestures.GestureListenerInterface gl = (KinectGestures.GestureListenerInterface)monoScript;
+				gestureListeners.Add(monoScript);
+			}
+		}
+
+		// locate Kinect gesture manager, if any
+		gestureManager = null;
+		foreach(MonoBehaviour monoScript in monoScripts)
+		{
+			if(typeof(KinectGestures).IsAssignableFrom(monoScript.GetType()) && 
+				monoScript.enabled)
+			{
+				gestureManager = (KinectGestures)monoScript;
+				break;
+			}
+		}
+	}
+
+	/// <summary>
+	/// Refreshs the avatar controllers' list.
+	/// </summary>
+	public void refreshAvatarControllers()
+	{
+		// remove all users, filters and avatar controllers
+		avatarControllers.Clear();
+		ClearKinectUsers();
+
+		// get the mono scripts. avatar controllers and gesture listeners are among them
+		MonoBehaviour[] monoScripts = FindObjectsOfType(typeof(MonoBehaviour)) as MonoBehaviour[];
+
+		// locate the available avatar controllers
+		foreach(MonoBehaviour monoScript in monoScripts)
+		{
+			if(typeof(AvatarController).IsAssignableFrom(monoScript.GetType()) &&
+				monoScript.enabled)
+			{
+				AvatarController avatar = (AvatarController)monoScript;
+				avatarControllers.Add(avatar);
+			}
+		}
+	}
+
 }
 

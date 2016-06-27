@@ -306,17 +306,17 @@ public class KinectGestures : MonoBehaviour
 		gestureData.screenPos.z = angle;
 	}
 
-
-    // estimate the next state and completeness of the gesture
-    /// <summary>
-    /// estimate the state and progress of the given gesture.
-    /// </summary>
-    /// <param name="userId">User ID</param>
-    /// <param name="gestureData">Gesture-data structure</param>
-    /// <param name="timestamp">Current time</param>
-    /// <param name="jointsPos">Joints-position array</param>
-    /// <param name="jointsTracked">Joints-tracked array</param>
-    public virtual void CheckForGesture(long userId, ref GestureData gestureData, float timestamp, ref Vector3[] jointsPos, ref bool[] jointsTracked)
+	
+	// estimate the next state and completeness of the gesture
+	/// <summary>
+	/// estimate the state and progress of the given gesture.
+	/// </summary>
+	/// <param name="userId">User ID</param>
+	/// <param name="gestureData">Gesture-data structure</param>
+	/// <param name="timestamp">Current time</param>
+	/// <param name="jointsPos">Joints-position array</param>
+	/// <param name="jointsTracked">Joints-tracked array</param>
+	public virtual void CheckForGesture(long userId, ref GestureData gestureData, float timestamp, ref Vector3[] jointsPos, ref bool[] jointsTracked)
 	{
 		if(gestureData.complete)
 			return;
@@ -1502,8 +1502,8 @@ public class KinectGestures : MonoBehaviour
 					break;
 				}
 				break;
-				
-			// here come more gesture-cases
+
+            // here come more gesture-cases
             // check for HandsTogether
             case Gestures.HandsTogether:
                 Vector3 vectorHands = (Vector3)jointsPos[rightHandIndex] - jointsPos[leftHandIndex];
@@ -1628,6 +1628,5 @@ public class KinectGestures : MonoBehaviour
                 }
                 break;
         }
-	}
-
+    }
 }

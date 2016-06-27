@@ -2,9 +2,48 @@ using UnityEngine;
 //using Windows.Kinect;
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System;
 using System.IO;
+
+
+/// <summary>
+/// This interface needs to be implemented by all interaction listeners
+/// </summary>
+public interface InteractionListenerInterface
+{
+	/// <summary>
+	/// Invoked when hand grip is detected.
+	/// </summary>
+	/// <param name="userId">User ID</param>
+	/// <param name="userIndex">User index</param>
+	/// <param name="isRightHand">Whether it is the right hand or not</param>
+	/// <param name="isHandInteracting">Whether this hand is the interacting one or not</param>
+	/// <param name="handScreenPos">Hand screen position, including depth (Z)</param>
+	void HandGripDetected(long userId, int userIndex, bool isRightHand, bool isHandInteracting, Vector3 handScreenPos);
+
+	/// <summary>
+	/// Invoked when hand release is detected.
+	/// </summary>
+	/// <param name="userId">User ID</param>
+	/// <param name="userIndex">User index</param>
+	/// <param name="isRightHand">Whether it is the right hand or not</param>
+	/// <param name="isHandInteracting">Whether this hand is the interacting one or not</param>
+	/// <param name="handScreenPos">Hand screen position, including depth (Z)</param>
+	void HandReleaseDetected(long userId, int userIndex, bool isRightHand, bool isHandInteracting, Vector3 handScreenPos);
+
+	/// <summary>
+	/// Invoked when hand click is detected.
+	/// </summary>
+	/// <returns><c>true</c>, if the click detection must be restarted, <c>false</c> otherwise.</returns>
+	/// <param name="userId">User ID</param>
+	/// <param name="userIndex">User index</param>
+	/// <param name="isRightHand">Whether it is the right hand or not</param>
+	/// <param name="handScreenPos">Hand screen position, including depth (Z)</param>
+	bool HandClickDetected(long userId, int userIndex, bool isRightHand, Vector3 handScreenPos);
+}
+
 
 /// <summary>
 /// Interaction manager is the component that deals with hand interactions.
@@ -49,10 +88,13 @@ public class InteractionManager : MonoBehaviour
 	// Bool to specify whether to convert Unity screen coordinates to full screen mouse coordinates
 	//public bool convertMouseToFullScreen = false;
 	
+	[Tooltip("List of the utilized visual gesture listeners. They must implement VisualGestureListenerInterface. If the list is empty, the available gesture listeners will be detected at start up.")]
+	public List<MonoBehaviour> interactionListeners;
+
 	[Tooltip("GUI-Text to display the interaction-manager debug messages.")]
 	public GUIText debugText;
 	
-	private long primaryUserID = 0;
+	private long playerUserID = 0;
 	
 	private bool isLeftHandPrimary = false;
 	private bool isRightHandPrimary = false;
@@ -132,7 +174,7 @@ public class InteractionManager : MonoBehaviour
 	/// <returns>The user ID</returns>
 	public long GetUserID()
 	{
-		return primaryUserID;
+		return playerUserID;
 	}
 	
 	/// <summary>
@@ -298,6 +340,22 @@ public class InteractionManager : MonoBehaviour
 	{
 		instance = this;
 		interactionInited = true;
+
+		// try to automatically detect the available gesture listeners in the scene
+		if(interactionListeners.Count == 0)
+		{
+			MonoBehaviour[] monoScripts = FindObjectsOfType(typeof(MonoBehaviour)) as MonoBehaviour[];
+
+			foreach(MonoBehaviour monoScript in monoScripts)
+			{
+				if(typeof(InteractionListenerInterface).IsAssignableFrom(monoScript.GetType()) &&
+					monoScript.enabled)
+				{
+					interactionListeners.Add(monoScript);
+				}
+			}
+		}
+
 	}
 	
 	void OnDestroy()
@@ -317,34 +375,37 @@ public class InteractionManager : MonoBehaviour
 		// update Kinect interaction
 		if(kinectManager && kinectManager.IsInitialized())
 		{
-			primaryUserID = kinectManager.GetUserIdByIndex(playerIndex);
+			playerUserID = kinectManager.GetUserIdByIndex(playerIndex);
 			
-			if(primaryUserID != 0)
+			if(playerUserID != 0)
 			{
 				HandEventType handEvent = HandEventType.None;
 				
 				// get the left hand state
-				leftHandState = kinectManager.GetLeftHandState(primaryUserID);
+				leftHandState = kinectManager.GetLeftHandState(playerUserID);
 				
 				// check if the left hand is interacting
-				isleftIboxValid = kinectManager.GetLeftHandInteractionBox(primaryUserID, ref leftIboxLeftBotBack, ref leftIboxRightTopFront, isleftIboxValid);
+				isleftIboxValid = kinectManager.GetLeftHandInteractionBox(playerUserID, ref leftIboxLeftBotBack, ref leftIboxRightTopFront, isleftIboxValid);
 				//bool bLeftHandPrimaryNow = false;
-				
+
+				// was the left hand interacting till now
+				bool wasLeftHandInteracting = isLeftHandInteracting;
+
 				if(isleftIboxValid && //bLeftHandPrimaryNow &&
-				   kinectManager.GetJointTrackingState(primaryUserID, (int)KinectInterop.JointType.HandLeft) != KinectInterop.TrackingState.NotTracked)
+				   kinectManager.GetJointTrackingState(playerUserID, (int)KinectInterop.JointType.HandLeft) != KinectInterop.TrackingState.NotTracked)
 				{
-					leftHandPos = kinectManager.GetJointPosition(primaryUserID, (int)KinectInterop.JointType.HandLeft);
+					leftHandPos = kinectManager.GetJointPosition(playerUserID, (int)KinectInterop.JointType.HandLeft);
 
 					leftHandScreenPos.x = Mathf.Clamp01((leftHandPos.x - leftIboxLeftBotBack.x) / (leftIboxRightTopFront.x - leftIboxLeftBotBack.x));
 					leftHandScreenPos.y = Mathf.Clamp01((leftHandPos.y - leftIboxLeftBotBack.y) / (leftIboxRightTopFront.y - leftIboxLeftBotBack.y));
 					leftHandScreenPos.z = Mathf.Clamp01((leftIboxLeftBotBack.z - leftHandPos.z) / (leftIboxLeftBotBack.z - leftIboxRightTopFront.z));
 
-					bool wasLeftHandInteracting = isLeftHandInteracting;
 					isLeftHandInteracting = (leftHandPos.x >= (leftIboxLeftBotBack.x - 1.0f)) && (leftHandPos.x <= (leftIboxRightTopFront.x + 0.5f)) &&
 						(leftHandPos.y >= (leftIboxLeftBotBack.y - 0.1f)) && (leftHandPos.y <= (leftIboxRightTopFront.y + 0.7f)) &&
 						(leftIboxLeftBotBack.z >= leftHandPos.z) && (leftIboxRightTopFront.z * 0.8f <= leftHandPos.z);
 					//bLeftHandPrimaryNow = isLeftHandInteracting;
-					
+
+					// start interacting?
 					if(!wasLeftHandInteracting && isLeftHandInteracting)
 					{
 						leftHandInteractingSince = Time.realtimeSinceStartup;
@@ -354,10 +415,8 @@ public class InteractionManager : MonoBehaviour
 					isLeftHandPress = ((leftIboxRightTopFront.z - 0.1f) >= leftHandPos.z);
 					
 					// check for left hand click
-					float fClickDist = (leftHandPos - lastLeftHandPos).magnitude;
-
 					if(allowHandClicks && !dragInProgress && isLeftHandInteracting && 
-					   (fClickDist < KinectInterop.Constants.ClickMaxDistance))
+						((leftHandPos - lastLeftHandPos).magnitude < KinectInterop.Constants.ClickMaxDistance))
 					{
 						if((Time.realtimeSinceStartup - lastLeftHandTime) >= KinectInterop.Constants.ClickStayDuration)
 						{
@@ -365,7 +424,18 @@ public class InteractionManager : MonoBehaviour
 							{
 								isLeftHandClick = true;
 								leftHandClickProgress = 1f;
-								
+
+								foreach(InteractionListenerInterface listener in interactionListeners)
+								{
+									if (listener.HandClickDetected (playerUserID, playerIndex, false, leftHandScreenPos)) 
+									{
+										isLeftHandClick = false;
+										leftHandClickProgress = 0f;
+										lastLeftHandPos = Vector3.zero;
+										lastLeftHandTime = Time.realtimeSinceStartup;
+									}
+								}
+
 								if(controlMouseCursor)
 								{
 									MouseControl.MouseClick();
@@ -396,23 +466,38 @@ public class InteractionManager : MonoBehaviour
 					isLeftHandPress = false;
 				}
 				
+				// if left hand just stopped interacting, send extra non-interaction event
+				if (wasLeftHandInteracting && !isLeftHandInteracting) 
+				{
+					foreach(InteractionListenerInterface listener in interactionListeners)
+					{
+						if(lastLeftHandEvent == HandEventType.Grip)
+							listener.HandGripDetected (playerUserID, playerIndex, false, isLeftHandInteracting, leftHandScreenPos);
+						else //if(lastLeftHandEvent == HandEventType.Release)
+							listener.HandReleaseDetected (playerUserID, playerIndex, false, isLeftHandInteracting, leftHandScreenPos);
+					}
+				}
+
+
 				// get the right hand state
-				rightHandState = kinectManager.GetRightHandState(primaryUserID);
+				rightHandState = kinectManager.GetRightHandState(playerUserID);
 
 				// check if the right hand is interacting
-				isRightIboxValid = kinectManager.GetRightHandInteractionBox(primaryUserID, ref rightIboxLeftBotBack, ref rightIboxRightTopFront, isRightIboxValid);
+				isRightIboxValid = kinectManager.GetRightHandInteractionBox(playerUserID, ref rightIboxLeftBotBack, ref rightIboxRightTopFront, isRightIboxValid);
 				//bool bRightHandPrimaryNow = false;
-				
+
+				// was the right hand interacting till now
+				bool wasRightHandInteracting = isRightHandInteracting;
+
 				if(isRightIboxValid && //bRightHandPrimaryNow &&
-				   kinectManager.GetJointTrackingState(primaryUserID, (int)KinectInterop.JointType.HandRight) != KinectInterop.TrackingState.NotTracked)
+				   kinectManager.GetJointTrackingState(playerUserID, (int)KinectInterop.JointType.HandRight) != KinectInterop.TrackingState.NotTracked)
 				{
-					rightHandPos = kinectManager.GetJointPosition(primaryUserID, (int)KinectInterop.JointType.HandRight);
+					rightHandPos = kinectManager.GetJointPosition(playerUserID, (int)KinectInterop.JointType.HandRight);
 
 					rightHandScreenPos.x = Mathf.Clamp01((rightHandPos.x - rightIboxLeftBotBack.x) / (rightIboxRightTopFront.x - rightIboxLeftBotBack.x));
 					rightHandScreenPos.y = Mathf.Clamp01((rightHandPos.y - rightIboxLeftBotBack.y) / (rightIboxRightTopFront.y - rightIboxLeftBotBack.y));
 					rightHandScreenPos.z = Mathf.Clamp01((rightIboxLeftBotBack.z - rightHandPos.z) / (rightIboxLeftBotBack.z - rightIboxRightTopFront.z));
 
-					bool wasRightHandInteracting = isRightHandInteracting;
 					isRightHandInteracting = (rightHandPos.x >= (rightIboxLeftBotBack.x - 0.5f)) && (rightHandPos.x <= (rightIboxRightTopFront.x + 1.0f)) &&
 						(rightHandPos.y >= (rightIboxLeftBotBack.y - 0.1f)) && (rightHandPos.y <= (rightIboxRightTopFront.y + 0.7f)) &&
 						(rightIboxLeftBotBack.z >= rightHandPos.z) && (rightIboxRightTopFront.z * 0.8f <= rightHandPos.z);
@@ -435,10 +520,8 @@ public class InteractionManager : MonoBehaviour
 					isRightHandPress = ((rightIboxRightTopFront.z - 0.1f) >= rightHandPos.z);
 					
 					// check for right hand click
-					float fClickDist = (rightHandPos - lastRightHandPos).magnitude;
-
 					if(allowHandClicks && !dragInProgress && isRightHandInteracting && 
-					   (fClickDist < KinectInterop.Constants.ClickMaxDistance))
+						((rightHandPos - lastRightHandPos).magnitude < KinectInterop.Constants.ClickMaxDistance))
 					{
 						if((Time.realtimeSinceStartup - lastRightHandTime) >= KinectInterop.Constants.ClickStayDuration)
 						{
@@ -447,6 +530,17 @@ public class InteractionManager : MonoBehaviour
 								isRightHandClick = true;
 								rightHandClickProgress = 1f;
 								
+								foreach(InteractionListenerInterface listener in interactionListeners)
+								{
+									if (listener.HandClickDetected (playerUserID, playerIndex, true, rightHandScreenPos)) 
+									{
+										isRightHandClick = false;
+										rightHandClickProgress = 0f;
+										lastRightHandPos = Vector3.zero;
+										lastRightHandTime = Time.realtimeSinceStartup;
+									}
+								}
+
 								if(controlMouseCursor)
 								{
 									MouseControl.MouseClick();
@@ -477,6 +571,19 @@ public class InteractionManager : MonoBehaviour
 					isRightHandPress = false;
 				}
 				
+				// if right hand just stopped interacting, send extra non-interaction event
+				if (wasRightHandInteracting && !isRightHandInteracting) 
+				{
+					foreach(InteractionListenerInterface listener in interactionListeners)
+					{
+						if(lastRightHandEvent == HandEventType.Grip)
+							listener.HandGripDetected (playerUserID, playerIndex, true, isRightHandInteracting, rightHandScreenPos);
+						else //if(lastRightHandEvent == HandEventType.Release)
+							listener.HandReleaseDetected (playerUserID, playerIndex, true, isRightHandInteracting, rightHandScreenPos);
+					}
+				}
+
+
 				// process left hand
 				handEvent = HandStateToEvent(leftHandState, lastLeftHandEvent);
 
@@ -509,6 +616,17 @@ public class InteractionManager : MonoBehaviour
 				leftHandEvent = handEvent;
 				if(handEvent != HandEventType.None)
 				{
+					if (leftHandEvent != lastLeftHandEvent) 
+					{
+						foreach(InteractionListenerInterface listener in interactionListeners)
+						{
+							if(leftHandEvent == HandEventType.Grip)
+								listener.HandGripDetected (playerUserID, playerIndex, false, isLeftHandInteracting, leftHandScreenPos);
+							else if(leftHandEvent == HandEventType.Release)
+								listener.HandReleaseDetected (playerUserID, playerIndex, false, isLeftHandInteracting, leftHandScreenPos);
+						}
+					}
+
 					lastLeftHandEvent = handEvent;
 				}
 				
@@ -536,7 +654,8 @@ public class InteractionManager : MonoBehaviour
 				{
 					isLeftHandPrimary = false;
 				}
-				
+
+
 				// process right hand
 				handEvent = HandStateToEvent(rightHandState, lastRightHandEvent);
 
@@ -557,6 +676,17 @@ public class InteractionManager : MonoBehaviour
 				rightHandEvent = handEvent;
 				if(handEvent != HandEventType.None)
 				{
+					if (rightHandEvent != lastRightHandEvent) 
+					{
+						foreach(InteractionListenerInterface listener in interactionListeners)
+						{
+							if(rightHandEvent == HandEventType.Grip)
+								listener.HandGripDetected (playerUserID, playerIndex, true, isRightHandInteracting, rightHandScreenPos);
+							else if(rightHandEvent == HandEventType.Release)
+								listener.HandReleaseDetected (playerUserID, playerIndex, true, isRightHandInteracting, rightHandScreenPos);
+						}
+					}
+
 					lastRightHandEvent = handEvent;
 				}	
 				
@@ -699,7 +829,7 @@ public class InteractionManager : MonoBehaviour
 				}
 			}
 			
-			debugText.GetComponent<GUIText>().text = sGuiText;
+			debugText.text = sGuiText;
 		}
 		
 		// display the cursor status and position

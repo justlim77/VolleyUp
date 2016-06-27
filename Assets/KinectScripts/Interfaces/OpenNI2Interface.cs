@@ -541,6 +541,8 @@ public class OpenNI2Interface : DepthSensorInterface
 		IntPtr pColorMap = GetUsersColorMap();
 		if(pColorMap == IntPtr.Zero)
 			return false;
+
+		sensorData.lastColorFrameTime = DateTime.Now.Ticks;
 		
 		// copy over the map
 		Marshal.Copy(pColorMap, usersColorMap, 0, usersColorMap.Length);
@@ -567,6 +569,8 @@ public class OpenNI2Interface : DepthSensorInterface
 		
 		if(pLabelMap == IntPtr.Zero || pDepthMap == IntPtr.Zero)
 			return false;
+
+		sensorData.lastDepthFrameTime = sensorData.lastBodyIndexFrameTime = DateTime.Now.Ticks;
 		
 		// copy over the maps
 		Marshal.Copy(pLabelMap, usersLabelMap, 0, usersLabelMap.Length);
