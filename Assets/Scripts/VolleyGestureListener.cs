@@ -94,8 +94,8 @@ namespace Volley
             {
                 if (gesture == KinectGestures.Gestures.UnderhandLeftToss)
                 {
-                    VolleySpawner.Instance.Spawn(KinectManager.Instance.GetJointKinectPosition(userId, (int)joint));
-                    sGestureText += " | " + joint.ToString();
+                    GameObject ball = VolleySpawner.Instance.Spawn(KinectManager.Instance.GetJointKinectPosition(userId, (int)joint));
+                    Logger.Log("Spawning " + ball.GetHashCode());
                 }
 
                 //gestureInfo.text = sGestureText;

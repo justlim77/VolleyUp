@@ -41,11 +41,11 @@ namespace Volley
             {
                 float val = (float)args;
                 string msg = "";
-                if (val <= perfectRating.Distance)
+                if (val > perfectRating.RangeMin && val < perfectRating.RangeMax)
                     msg = string.Format("<color={0}>Perfect</color>", ColorTypeConverter.ToRGBHex(perfectRating.Color));
-                else if (val > perfectRating.Distance && val < goodRating.Distance)
+                else if (val > greatRating.RangeMin && val < greatRating.RangeMax)
                     msg = string.Format("<color={0}>Great</color>", ColorTypeConverter.ToRGBHex(greatRating.Color));
-                else if (val >= goodRating.Distance)
+                else
                     msg = string.Format("<color={0}>Good</color>", ColorTypeConverter.ToRGBHex(goodRating.Color));
                 Core.BroadcastEvent("OnStatusUpdate", this, msg);
             }
@@ -67,7 +67,8 @@ namespace Volley
     [Serializable]
     public struct HitRating
     {
-        public float Distance;
+        public float RangeMin;
+        public float RangeMax;
         public Color Color;
     }
 }

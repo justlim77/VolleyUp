@@ -3203,43 +3203,44 @@ public class KinectManager : MonoBehaviour
 
 		return uidIndex;
 	}
-	
-//	// Returns empty user slot for the given user Id (sorts user indices left to right)
-//	protected virtual int GetEmptyUserSlot(Int64 userId, int bodyIndex)
-//	{
-//		int uidIndex = -1;
-//		float userX = bodyFrame.bodyData[bodyIndex].position.x;
-//		
-//		for(int i = 0; i < aUserIndexIds.Length; i++)
-//		{
-//			if(aUserIndexIds[i] == 0)
-//			{
-//				// free user slot
-//				uidIndex = i;
-//				break;
-//			}
-//			else
-//			{
-//				Int64 uidUserId = aUserIndexIds[i];
-//				float uidUserX = GetUserPosition(uidUserId).x;
-//
-//				if(userX <= uidUserX)
-//				{
-//					// current user is left to the compared one
-//					for(int u = i; u < (aUserIndexIds.Length - 1); u++)
-//					{
-//						aUserIndexIds[u + 1] = aUserIndexIds[u];
-//					}
-//
-//					uidIndex = i;
-//					break;
-//				}
-//			}
-//		}
-//		
-//		return uidIndex;
-//	}
-	
+
+    //	// Returns empty user slot for the given user Id (sorts user indices left to right)
+    //	protected virtual int GetEmptyUserSlot(Int64 userId, int bodyIndex)
+    //	{
+    //		int uidIndex = -1;
+    //		float userX = bodyFrame.bodyData[bodyIndex].position.x;
+    //		
+    //		for(int i = 0; i < aUserIndexIds.Length; i++)
+    //		{
+    //			if(aUserIndexIds[i] == 0)
+    //			{
+    //				// free user slot
+    //				uidIndex = i;
+    //				break;
+    //			}
+    //			else
+    //			{
+    //				Int64 uidUserId = aUserIndexIds[i];
+    //				float uidUserX = GetUserPosition(uidUserId).x;
+    //
+    //				if(userX <= uidUserX)
+    //				{
+    //					// current user is left to the compared one
+    //					for(int u = i; u < (aUserIndexIds.Length - 1); u++)
+    //					{
+    //						aUserIndexIds[u + 1] = aUserIndexIds[u];
+    //					}
+    //
+    //					uidIndex = i;
+    //					break;
+    //				}
+    //			}
+    //		}
+    //		
+    //		return uidIndex;
+    //	}
+
+    public static Int64 NewTrackedID = 0;
 	// Adds UserId to the list of users
     protected virtual void CalibrateUser(Int64 userId, int bodyIndex)
     {
@@ -3261,6 +3262,8 @@ public class KinectManager : MonoBehaviour
 				}
 				
 				Debug.Log("Adding user " + uidIndex + ", ID: " + userId + ", Body: " + bodyIndex);
+                NewTrackedID = userId;  // Track newest player
+                avatarControllers[0].playerId = userId; // BadFix
 
 				dictUserIdToIndex[userId] = bodyIndex;
 				dictUserIdToTime[userId] = Time.time;

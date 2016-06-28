@@ -24,23 +24,13 @@ namespace Volley
         public Vector3 throwForce;
         public float throwMultiplier;
 
-        [Header("Hitting parameters")]
-        public Vector3 hitForce;
-        public float hitMultiplier;
-
         Transform _leftHandTransform;
 
-        GameObject _cachedPrefab;
-        GameObject CachedPrefab
+        static int ballCount;
+        public static int BallCount
         {
-            get
-            {
-                if (_cachedPrefab == null)
-                {
-                    _cachedPrefab = (GameObject)Instantiate(objectPrefab);
-                }
-                return _cachedPrefab;
-            }
+            get { return ballCount; }
+            set { ballCount = value; }
         }
 
 	    // Use this for initialization
@@ -66,14 +56,15 @@ namespace Volley
             _Instance = null;
         }
 
-        public void Spawn(Vector3 position)
+        public GameObject Spawn(Vector3 position)
         {
             Vector3 pos = _leftHandTransform.position;
-            GameObject newBall = (GameObject)Instantiate(CachedPrefab, pos, Quaternion.identity);
+            GameObject ball = (GameObject)Instantiate(objectPrefab, pos, Quaternion.identity);
+            BallCount++;
             Vector3 force = throwForce * throwMultiplier;
-            newBall.GetComponent<Rigidbody>().AddForce(force);
-
-            Debug.Log("Ball Spawned at " + pos);
+            ball.GetComponent<Rigidbody>().AddForce(force);
+            Logger.Log(string.Format("{0} Ball Spawned at {1}", BallCount, pos));
+            return ball;
         }
     }
 
