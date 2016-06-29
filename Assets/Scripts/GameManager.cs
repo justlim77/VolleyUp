@@ -15,6 +15,10 @@ namespace Volley
             }
         }
         public int Score { get; set; }
+        public int Combo { get; set; }
+
+        static bool _Missed;
+        public static bool Missed { get; set; }
 
         public HitRating perfectRating;
         public HitRating greatRating;

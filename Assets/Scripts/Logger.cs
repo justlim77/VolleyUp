@@ -38,9 +38,17 @@ public class Logger : MonoBehaviour
 
     public static void Log(object args)
     {
-        string msg = (string)args.ToString() + "\n";
-        _Label.text += msg;
+        string msg = string.Format("[{0:F2}] > {1}\n", Time.time, args.ToString());
+        _Label.text = "";
         _Lines.Add(msg);
+        if (_Lines.Count > 100)
+        {
+            _Lines.RemoveAt(0);
+        }
+        foreach (var line in _Lines)
+        {
+            _Label.text += line;
+        }
         _Scrollbar.value = 1;
     }
 }
