@@ -5,6 +5,7 @@ namespace Volley
 {
     public class ArmBat : MonoBehaviour
     {
+        public bool countScore = true;
         public Vector3 hitForce;
         public Vector3 horizontalForce;
 
@@ -54,9 +55,12 @@ namespace Volley
                 // Check how close the collision happened
                 //float dist = Vector3.Distance(transform.position, col.transform.position);
                 float dist = Mathf.Abs(transform.position.y - col.transform.position.y);
-                Logger.Log("Collision distance: " + dist);
+                //Logger.Log("Collision distance: " + dist);
                 i.Interact(hitForce + hForce);
-                Core.BroadcastEvent("OnBallHit", this, dist);
+                if (countScore)
+                {
+                    Core.BroadcastEvent("OnBallHit", this, dist);
+                }
             }
         }
     }

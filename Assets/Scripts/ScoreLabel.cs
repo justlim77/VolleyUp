@@ -20,6 +20,8 @@ namespace Volley
             Core.SubscribeEvent("OnScoreUpdate", OnScoreUpdate);
 	    }
 
+        void Start() { }
+
         object OnScoreUpdate(object sender, object args)
         {
             if (args is int)

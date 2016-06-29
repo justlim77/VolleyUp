@@ -14,18 +14,30 @@ namespace Volley
             _label = GetComponent<Text>();
             if (_label != null)
             {
-                _label.text = "";
+                _label.text = "No Combo";
             }
 
             Core.SubscribeEvent("OnComboUpdate", OnComboUpdate);
 	    }
+
+        void Start() { }
 
         object OnComboUpdate(object sender, object args)
         {
             if (args is int)
             {
                 int combo = (int)args;
-                _label.text = string.Format("COMBO x{0}", combo.ToString());
+                string msg = "No combo";
+                if (combo > 1 && combo < GameManager.Instance.comboMax)
+                {
+                    msg = string.Format("COMBO {0}x", combo.ToString());
+                }
+                else if (combo >= GameManager.Instance.comboMax)
+                {
+                    msg = "COMBO MAX";
+                }
+
+                _label.text = msg;
             } 
 
             return null;

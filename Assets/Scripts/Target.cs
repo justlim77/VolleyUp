@@ -23,8 +23,13 @@ namespace Volley
             }
         }
 
+        bool _hasInteracted = false;
         public void Interact(object args)
         {
+            if (_hasInteracted)
+                return;
+
+            _hasInteracted = true;
             Core.BroadcastEvent("OnTargetHit", this, Points * Multiplier);
             gameObject.SetActive(false);
             Invoke("Activate", TimeToRespawn);
@@ -33,17 +38,13 @@ namespace Volley
         // Use this for initialization
         void Start ()
         {
-            Points = 100;
-	    }
-	
-	    // Update is called once per frame
-	    void Update () {
-	
+            Points = 10;
 	    }
 
         void Activate()
         {
             gameObject.SetActive(true);
+            _hasInteracted = false;
         }
     }
 
