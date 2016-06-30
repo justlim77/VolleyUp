@@ -85,6 +85,7 @@ namespace Volley
             if (i != null)
             {
                 i.Interact(null);
+                Destroy(this.gameObject);
             }
 
             foreach (int layerIndex in layerIndices)

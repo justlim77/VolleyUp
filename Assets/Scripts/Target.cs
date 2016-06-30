@@ -8,6 +8,14 @@ namespace Volley
     {
         public int Multiplier = 1;
         public float TimeToRespawn = 2f;
+        public Vector3 torqueForce;
+
+        Collider col;
+        MeshRenderer mr;
+        Vector3 originalScale;
+
+        float ExpandFactor { get { return originalScale.x * 6f; } }
+        float ShrinkFactor { get { return originalScale.x * 3f; } }
 
         int _points;
         public int Points
@@ -23,28 +31,79 @@ namespace Volley
             }
         }
 
-        bool _hasInteracted = false;
+        public bool HasInteracted
+        { get; private set; }
+
         public void Interact(object args)
         {
-            if (_hasInteracted)
+            if (HasInteracted)
                 return;
 
-            _hasInteracted = true;
             Core.BroadcastEvent("OnTargetHit", this, Points * Multiplier);
-            gameObject.SetActive(false);
-            Invoke("Activate", TimeToRespawn);
+            Deactivate();
         }
 
-        // Use this for initialization
+        void Awake()
+        {
+            col = GetComponent<Collider>();
+            mr = GetComponent<MeshRenderer>();
+
+            HasInteracted = col.enabled = mr.enabled = false;
+            originalScale = this.transform.localScale;
+        }
+
         void Start ()
         {
             Points = 10;
 	    }
 
-        void Activate()
+        public void Activate()
         {
-            gameObject.SetActive(true);
-            _hasInteracted = false;
+            HasInteracted = false;
+            StartCoroutine(Expand());
+        }
+
+        public void Deactivate()
+        {
+            HasInteracted = true;
+            StartCoroutine(Shrink());
+        }
+
+        IEnumerator Expand()
+        {
+            col.enabled = mr.enabled = true;
+
+            Vector3 scale = this.transform.localScale;
+
+            while (transform.localScale.x < originalScale.x - 0.1f)
+            {
+                scale.x += ExpandFactor * Time.deltaTime;
+                scale.z += ExpandFactor * Time.deltaTime;
+                transform.localScale = scale;
+                yield return null;
+            }
+
+            transform.localScale = originalScale;
+
+            yield return null;
+        }
+        IEnumerator Shrink()
+        {
+            col.enabled = false;
+
+            Vector3 scale = this.transform.localScale;
+
+            while (transform.localScale.x > 0.1f)
+            {
+                scale.x -= ShrinkFactor * Time.deltaTime;                
+                scale.z -= ShrinkFactor * Time.deltaTime;
+                transform.localScale = scale;
+                yield return null;
+            }
+
+            mr.enabled = false;
+
+            yield return null;
         }
     }
 
