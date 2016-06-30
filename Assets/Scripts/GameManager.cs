@@ -90,6 +90,9 @@ namespace Volley
                 int points = (int)args * Combo;
                 Score += points;
                 Core.BroadcastEvent("OnScoreUpdate", this, Score);
+
+                // Update highscore
+                Core.BroadcastEvent("OnHighscoreUpdate", this, Score);
             }
             return null;
         }
