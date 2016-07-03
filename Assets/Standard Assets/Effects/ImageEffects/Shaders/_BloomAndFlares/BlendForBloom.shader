@@ -9,11 +9,11 @@ Shader "Hidden/BlendForBloom" {
 	#include "UnityCG.cginc"
 	
 	struct v2f {
-		float4 pos : SV_POSITION;
+		float4 pos : POSITION;
 		float2 uv[2] : TEXCOORD0;
 	};
 	struct v2f_mt {
-		float4 pos : SV_POSITION;
+		float4 pos : POSITION;
 		float2 uv[5] : TEXCOORD0;
 	};
 			
@@ -49,52 +49,52 @@ Shader "Hidden/BlendForBloom" {
 		return o;
 	}
 	
-	half4 fragScreen (v2f i) : SV_Target {
+	half4 fragScreen (v2f i) : COLOR {
 		half4 addedbloom = tex2D(_MainTex, i.uv[0].xy) * _Intensity;
 		half4 screencolor = tex2D(_ColorBuffer, i.uv[1]);
 		return 1-(1-addedbloom)*(1-screencolor);
 	}
 
-	half4 fragScreenCheap(v2f i) : SV_Target {
+	half4 fragScreenCheap(v2f i) : COLOR {
 		half4 addedbloom = tex2D(_MainTex, i.uv[0].xy) * _Intensity;
 		half4 screencolor = tex2D(_ColorBuffer, i.uv[1]);
 		return 1-(1-addedbloom)*(1-screencolor);
 	}
 
-	half4 fragAdd (v2f i) : SV_Target {
+	half4 fragAdd (v2f i) : COLOR {
 		half4 addedbloom = tex2D(_MainTex, i.uv[0].xy);
 		half4 screencolor = tex2D(_ColorBuffer, i.uv[1]);
 		return _Intensity * addedbloom + screencolor;
 	}
 
-	half4 fragAddCheap (v2f i) : SV_Target {
+	half4 fragAddCheap (v2f i) : COLOR {
 		half4 addedbloom = tex2D(_MainTex, i.uv[0].xy);
 		half4 screencolor = tex2D(_ColorBuffer, i.uv[1]);
 		return _Intensity * addedbloom + screencolor;
 	}
 
-	half4 fragVignetteMul (v2f i) : SV_Target {
+	half4 fragVignetteMul (v2f i) : COLOR {
 		return tex2D(_MainTex, i.uv[0].xy) * tex2D(_ColorBuffer, i.uv[0]);
 	}
 
-	half4 fragVignetteBlend (v2f i) : SV_Target {
+	half4 fragVignetteBlend (v2f i) : COLOR {
 		return half4(1,1,1, tex2D(_ColorBuffer, i.uv[0]).r);
 	}
 
-	half4 fragClear (v2f i) : SV_Target {
+	half4 fragClear (v2f i) : COLOR {
 		return 0;
 	}
 
-	half4 fragAddOneOne (v2f i) : SV_Target {
+	half4 fragAddOneOne (v2f i) : COLOR {
 		half4 addedColors = tex2D(_MainTex, i.uv[0].xy);
 		return addedColors * _Intensity;
 	}
 
-	half4 frag1Tap (v2f i) : SV_Target {
+	half4 frag1Tap (v2f i) : COLOR {
 		return tex2D(_MainTex, i.uv[0].xy);
 	}
 	
-	half4 fragMultiTapMax (v2f_mt i) : SV_Target {
+	half4 fragMultiTapMax (v2f_mt i) : COLOR {
 		half4 outColor = tex2D(_MainTex, i.uv[4].xy);
 		outColor = max(outColor, tex2D(_MainTex, i.uv[0].xy));
 		outColor = max(outColor, tex2D(_MainTex, i.uv[1].xy));
@@ -103,7 +103,7 @@ Shader "Hidden/BlendForBloom" {
 		return outColor;
 	}
 
-	half4 fragMultiTapBlur (v2f_mt i) : SV_Target {
+	half4 fragMultiTapBlur (v2f_mt i) : COLOR {
 		half4 outColor = 0;
 		outColor += tex2D(_MainTex, i.uv[0].xy);
 		outColor += tex2D(_MainTex, i.uv[1].xy);
@@ -116,11 +116,13 @@ Shader "Hidden/BlendForBloom" {
 	
 Subshader {
 	  ZTest Always Cull Off ZWrite Off
+	  Fog { Mode off }  
 
  // 0: nicer & softer "screen" blend mode	  		  	
  Pass {    
 
       CGPROGRAM
+      #pragma fragmentoption ARB_precision_hint_fastest
       #pragma vertex vert
       #pragma fragment fragScreen
       ENDCG
@@ -130,6 +132,7 @@ Subshader {
  Pass {    
 
       CGPROGRAM
+      #pragma fragmentoption ARB_precision_hint_fastest
       #pragma vertex vert
       #pragma fragment fragAdd
       ENDCG
@@ -138,6 +141,7 @@ Subshader {
  Pass {    
 
       CGPROGRAM
+      #pragma fragmentoption ARB_precision_hint_fastest
       #pragma vertex vertMultiTap
       #pragma fragment fragMultiTapMax
       ENDCG
@@ -146,6 +150,7 @@ Subshader {
  Pass {    
 
       CGPROGRAM
+      #pragma fragmentoption ARB_precision_hint_fastest
       #pragma vertex vert
       #pragma fragment fragVignetteMul
       ENDCG
@@ -154,6 +159,7 @@ Subshader {
  Pass {    
 
       CGPROGRAM
+      #pragma fragmentoption ARB_precision_hint_fastest
       #pragma vertex vert
       #pragma fragment fragScreenCheap
       ENDCG
@@ -162,6 +168,7 @@ Subshader {
  Pass {    
 
       CGPROGRAM
+      #pragma fragmentoption ARB_precision_hint_fastest
       #pragma vertex vert
       #pragma fragment fragAddCheap
       ENDCG
@@ -170,6 +177,7 @@ Subshader {
  Pass {    
 
       CGPROGRAM
+      #pragma fragmentoption ARB_precision_hint_fastest
       #pragma vertex vertMultiTap
       #pragma fragment fragMultiTapBlur
       ENDCG
@@ -180,6 +188,7 @@ Subshader {
  	  Blend Zero SrcAlpha
 
       CGPROGRAM
+      #pragma fragmentoption ARB_precision_hint_fastest
       #pragma vertex vert
       #pragma fragment fragVignetteBlend
       ENDCG
@@ -188,6 +197,7 @@ Subshader {
  Pass {    
  	  
       CGPROGRAM
+      #pragma fragmentoption ARB_precision_hint_fastest
       #pragma vertex vert
       #pragma fragment fragClear
       ENDCG
@@ -198,6 +208,7 @@ Subshader {
  	  Blend One One
  	  
       CGPROGRAM
+      #pragma fragmentoption ARB_precision_hint_fastest
       #pragma vertex vert
       #pragma fragment fragAddOneOne
       ENDCG
@@ -209,6 +220,7 @@ Subshader {
  	  Blend One One
  	  
       CGPROGRAM
+      #pragma fragmentoption ARB_precision_hint_fastest
       #pragma vertex vert
       #pragma fragment frag1Tap
       ENDCG

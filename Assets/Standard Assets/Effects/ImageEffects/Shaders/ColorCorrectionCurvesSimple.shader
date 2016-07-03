@@ -7,10 +7,12 @@ Shader "Hidden/ColorCorrectionCurvesSimple" {
 	// Shader code pasted into all further CGPROGRAM blocks
 	CGINCLUDE
 
+	#pragma fragmentoption ARB_precision_hint_fastest
+	
 	#include "UnityCG.cginc"
 	
 	struct v2f {
-		float4 pos : SV_POSITION;
+		float4 pos : POSITION;
 		half2 uv : TEXCOORD0;
 	};
 	
@@ -26,7 +28,7 @@ Shader "Hidden/ColorCorrectionCurvesSimple" {
 		return o;
 	} 
 	
-	fixed4 frag(v2f i) : SV_Target 
+	fixed4 frag(v2f i) : COLOR 
 	{
 		fixed4 color = tex2D(_MainTex, i.uv); 
 		
@@ -46,6 +48,7 @@ Shader "Hidden/ColorCorrectionCurvesSimple" {
 Subshader {
  Pass {
 	  ZTest Always Cull Off ZWrite Off
+	  Fog { Mode off }      
 
       CGPROGRAM
       #pragma vertex vert

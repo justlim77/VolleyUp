@@ -1,0 +1,91 @@
+fileFormatVersion: 2
+guid: 40fe3d9b01bba97448b2390d81778e60
+labels:
+- beach
+- summer
+timeCreated: 1429975272
+licenseType: Store
+ModelImporter:
+  serializedVersion: 18
+  fileIDToRecycleName:
+    100000: //RootNode
+    100002: flagWarning:greenFlag
+    100004: flagWarning:pillar
+    100006: flagWarning:redFlag
+    100008: flagWarning:yellowFlag
+    400000: //RootNode
+    400002: flagWarning:greenFlag
+    400004: flagWarning:pillar
+    400006: flagWarning:redFlag
+    400008: flagWarning:yellowFlag
+    2300000: flagWarning:greenFlag
+    2300002: flagWarning:pillar
+    2300004: flagWarning:redFlag
+    2300006: flagWarning:yellowFlag
+    3300000: flagWarning:greenFlag
+    3300002: flagWarning:pillar
+    3300004: flagWarning:redFlag
+    3300006: flagWarning:yellowFlag
+    4300000: flagWarning:pillar
+    4300002: flagWarning:greenFlag
+    4300004: flagWarning:yellowFlag
+    4300006: flagWarning:redFlag
+    9500000: //RootNode
+  materials:
+    importMaterials: 1
+    materialName: 0
+    materialSearch: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    optimizeGameObjects: 0
+    motionNodeName: 
+    animationCompression: 1
+    animationRotationError: .5
+    animationPositionError: .5
+    animationScaleError: .5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    clipAnimations: []
+    isReadable: 1
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    importBlendShapes: 1
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    optimizeMeshForGPU: 1
+    keepQuads: 0
+    weldVertices: 1
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+  tangentSpace:
+    normalSmoothAngle: 60
+    splitTangentsAcrossUV: 1
+    normalImportMode: 0
+    tangentImportMode: 1
+  importAnimation: 1
+  copyAvatar: 0
+  humanDescription:
+    human: []
+    skeleton: []
+    armTwist: .5
+    foreArmTwist: .5
+    upperLegTwist: .5
+    legTwist: .5
+    armStretch: .0500000007
+    legStretch: .0500000007
+    feetSpacing: 0
+    rootMotionBoneName: 
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  animationType: 2
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
