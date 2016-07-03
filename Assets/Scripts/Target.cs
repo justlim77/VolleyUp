@@ -34,7 +34,7 @@ namespace Volley
         public bool HasInteracted
         { get; private set; }
 
-        public void Interact(object args)
+        public void Interact(object sender, object args)
         {
             if (HasInteracted)
                 return;

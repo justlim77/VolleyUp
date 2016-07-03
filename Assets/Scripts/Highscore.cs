@@ -4,10 +4,14 @@ using System.Collections;
 
 public class Highscore : MonoBehaviour
 {
+    public static int TopScore;
+
     public KeyCode resetStatsKey = KeyCode.Delete;
+    public int addSpeed = 5;
 
     Text _label;
-    public static int TopScore;
+    int _currentScore;
+    int _targetScore;
 
 	// Use this for initialization
 	void Start ()
@@ -16,7 +20,7 @@ public class Highscore : MonoBehaviour
 
         Core.SubscribeEvent("OnHighscoreUpdate", OnHighscoreUpdate);
 
-        TopScore = PlayerPrefs.GetInt("highscore", 0);
+        _currentScore = _targetScore = TopScore = PlayerPrefs.GetInt("highscore", 0);
         _label.text = TopScore.ToString();
     }
 
@@ -30,6 +34,14 @@ public class Highscore : MonoBehaviour
         if (Input.GetKeyDown(resetStatsKey))
         {
             PlayerPrefs.SetInt("highscore", 0);
+            OnHighscoreUpdate(this, 0);
+            _currentScore = 0;
+        }
+        
+        if (_currentScore != _targetScore)
+        {
+            _currentScore += (int)(addSpeed * Time.deltaTime);
+            _label.text = TopScore.ToString();
         }
     }
 
@@ -40,9 +52,8 @@ public class Highscore : MonoBehaviour
             int highscore = (int)args;
             if (highscore > TopScore)
             {
-                TopScore = highscore;
+                TopScore = _targetScore = highscore;
                 PlayerPrefs.SetInt("highscore", highscore);
-                _label.text = TopScore.ToString();
             }
         }
 

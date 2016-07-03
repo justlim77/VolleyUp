@@ -6,6 +6,6 @@ namespace Volley
     public interface IInteractable
     {
         int Points { get; set; }
-        void Interact(object args);
+        void Interact(object sender, object args);
     }
 }

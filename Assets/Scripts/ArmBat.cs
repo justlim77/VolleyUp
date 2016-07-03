@@ -49,11 +49,15 @@ namespace Volley
                 //float dist = Vector3.Distance(transform.position, col.transform.position);
                 float dist = Mathf.Abs(transform.position.y - col.transform.position.y);
                 //Logger.Log("Collision distance: " + dist);
-                i.Interact(hitForce + externalForce);
+                Vector3 force = hitForce + externalForce;
+                i.Interact(this, force);
                 if (countScore)
                 {
                     Core.BroadcastEvent("OnBallHit", this, dist);
                 }
+
+                // Audio feedback
+                AudioManager.Instance.PlayRandomClipAtPoint(SoundType.VolleyHit, transform.position);
             }
         }
     }
