@@ -3274,6 +3274,7 @@ public class KinectManager : MonoBehaviour
 				{
 					liPrimaryUserId = aUserIndexIds[0];  // userId
                     avatarControllers[0].playerId = liPrimaryUserId; // TODO: Temp implementation
+                    avatarControllers[0].playerIndex = bodyIndex; // TODO: FIX
 
                     if (liPrimaryUserId != 0)
 					{
