@@ -22,7 +22,11 @@ namespace Volley
 
         public Animator playerAnimator;
 
-        public float Timer { get; private set; }
+        public float ScoreTimer { get; private set; }
+        public float ComboTimer { get; private set; }
+
+        public bool RoundStarted { get; set; }
+        public bool FirstHit { get; set; }
 
         void Awake()
         {
@@ -35,19 +39,26 @@ namespace Volley
 
         void Start()
         {
-            Combo = 1;
-            Score = 0;
+            Reset();
         }
 
         void Update()
         {
-            Timer += Time.deltaTime;
+            if (!RoundStarted && !FirstHit)
+                return;
 
-            if (Timer > comboInterval)
+            // Game timer
+            ScoreTimer += Time.deltaTime;
+
+            // Combo timer
+            ComboTimer += Time.deltaTime;
+
+            if (ComboTimer > comboInterval)
             {
                 Combo = 1;
-                Timer = 0;
+                ComboTimer = 0;
             }
+
         }
 
         void OnDestroy()
@@ -77,7 +88,7 @@ namespace Volley
             if (args is int)
             {
                 // Reset combo timer
-                Timer = 0; // Reset combo timer
+                ComboTimer = 0; // Reset combo timer
                 Combo++;
                 Combo = Mathf.Clamp(Combo, 1, comboMax);
                 Core.BroadcastEvent("OnComboUpdate", this, Combo);
@@ -95,17 +106,19 @@ namespace Volley
         public void Reset()
         {
             Score = 0;
+            ScoreTimer = 0;
             Core.BroadcastEvent("OnScoreUpdate", this, Score);
 
             Combo = 1;
+            ComboTimer = 0;
             Core.BroadcastEvent("OnComboUpdate", this, Combo);
 
-            Timer = 0;
+            RoundStarted = false;
+            Core.BroadcastEvent("OnTargetScoreUpdate", this, 0);
         }
     }
 
     
-
     [Serializable]
     public struct HitRating
     {

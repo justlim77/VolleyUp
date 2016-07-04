@@ -31,8 +31,7 @@ namespace Volley
             // as an example - detect these user specific gestures
             KinectManager manager = KinectManager.Instance;
 
-            // Check if primary user still exists
-            
+            Debug.Log("[UserDetected] PrimaryUserID: " + manager.GetPrimaryUserID() + ", DetectedUserID: " + userId);
 
             foreach(var gesture in gesturesToDetect)
                 manager.DetectGesture(userId, gesture);
@@ -45,13 +44,23 @@ namespace Volley
 
         public void UserLost(long userId, int userIndex)
         {
+            KinectManager manager = KinectManager.Instance;
+
             if (gestureInfo != null)
             {
-                gestureInfo.text = findingMessage;
+                if (manager.IsUserTracked(manager.GetPrimaryUserID()))
+                {
+                    Debug.Log("[UserLost] Primary User ID: " + manager.GetPrimaryUserID() + " still detected, aborting...");
+                    return;
+                }
+
+                else
+                {
+                    gestureInfo.text = findingMessage;  // Show waiting for users feedback
+                    GameManager.Instance.Reset();       // Reset score
+                }
             }
 
-            // Reset score
-            GameManager.Instance.Reset();
         }
 
         public void GestureInProgress(long userId, int userIndex, KinectGestures.Gestures gesture,

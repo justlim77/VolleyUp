@@ -3273,8 +3273,7 @@ public class KinectManager : MonoBehaviour
 				if(liPrimaryUserId == 0 && aUserIndexIds.Length > 0)
 				{
 					liPrimaryUserId = aUserIndexIds[0];  // userId
-                    avatarControllers[0].playerId = liPrimaryUserId; // TODO: Temp implementation
-                    avatarControllers[0].playerIndex = bodyIndex; // TODO: FIX
+                    //avatarControllers[0].playerId = liPrimaryUserId; // TODO: Temp implementation
 
                     if (liPrimaryUserId != 0)
 					{
@@ -3297,9 +3296,21 @@ public class KinectManager : MonoBehaviour
 						avatar.SuccessfulCalibration(userId);
 					}
 				}
-				
-				// add the gestures to be detected by all users, if any
-				foreach(KinectGestures.Gestures gesture in playerCommonGestures)
+
+                // TODO: Avatar round-robin
+                AvatarController avatarMain = avatarControllers[0];
+                if (avatarMain && avatarMain.playerIndex == 0)
+                {
+                    Debug.Log("avatarMain playerIndex is 0... Setting avatarMain playerIndex to primary user ID");
+                    avatarMain.playerId = liPrimaryUserId;
+                    avatarMain.SuccessfulCalibration(liPrimaryUserId);
+                }
+
+                Debug.Log("Avatar user " + avatarControllers[0].playerIndex + ", ID: " + avatarControllers[0].playerId);
+                Debug.Log("Primary user ID after adding: " + liPrimaryUserId);
+
+                // add the gestures to be detected by all users, if any
+                foreach (KinectGestures.Gestures gesture in playerCommonGestures)
 				{
 					DetectGesture(userId, gesture);
 				}
@@ -3393,18 +3404,29 @@ public class KinectManager : MonoBehaviour
 				liPrimaryUserId = 0;
 			}
 		}
-		
-//		for(int i = 0; i < avatarControllers.Count; i++)
-//		{
-//			AvatarController avatar = avatarControllers[i];
-//			
-//			if(avatar && avatar.playerIndex >= uidIndex && avatar.playerIndex < alUserIds.Count)
-//			{
-//				avatar.SuccessfulCalibration(alUserIds[avatar.playerIndex]);
-//			}
-//		}
 
-		if(alUserIds.Count == 0)
+        // TODO: Avatar round-robin
+        AvatarController avatarMain = avatarControllers[0];
+        if (avatarMain && avatarMain.playerIndex == 0)
+        {
+            Debug.Log("[RemoveUser] Avatar user ID: " + avatarMain.playerId);
+            avatarMain.playerId = liPrimaryUserId;
+        }
+
+        Debug.Log("Avatar user " + avatarControllers[0].playerIndex + ", ID: " + avatarControllers[0].playerId);
+        Debug.Log("Primary user ID after removing: " + liPrimaryUserId);
+
+        //		for(int i = 0; i < avatarControllers.Count; i++)
+        //		{
+        //			AvatarController avatar = avatarControllers[i];
+        //			
+        //			if(avatar && avatar.playerIndex >= uidIndex && avatar.playerIndex < alUserIds.Count)
+        //			{
+        //				avatar.SuccessfulCalibration(alUserIds[avatar.playerIndex]);
+        //			}
+        //		}
+
+        if (alUserIds.Count == 0)
 		{
 			Debug.Log("Waiting for users.");
 			

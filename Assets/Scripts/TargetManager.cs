@@ -6,35 +6,44 @@ namespace Volley
     public class TargetManager : MonoBehaviour
     {
         public Target[] targets;
+        public int targetHitsRequired;
 
-        static TargetManager _Instance;
-        public static TargetManager Instance
-        {
-            get
-            {
-                return _Instance;
-            }
-        }
+        public static TargetManager Instance { get; private set; }
 
-        int targetsMax;
-        int prevIdx, currentIdx;
+        int _targetsMax;
+        int _targetHitsRequired;
+        int _currentHits;
+        int _prevIdx, _currentIdx;
 
         void Awake()
         {
-            _Instance = this;
+            if(Instance == null)
+                Instance = this;
+
+            Core.SubscribeEvent("OnTargetHitUpdate", OnTargetHitUpdate);
         }
 
         void OnDestroy()
         {
-            _Instance = null;
+            Instance = null;
+
+            Core.UnsubscribeEvent("OnTargetHitUpdate", OnTargetHitUpdate);
+        }
+
+        object OnTargetHitUpdate(object sender, object args)
+        {
+            _currentHits++;
+            _currentHits = Mathf.Clamp(_currentHits, 0, _targetHitsRequired);
+            Core.BroadcastEvent("OnTargetScoreUpdate", this, _currentHits);
+            return null;
         }
 
 	    void Start ()
         {
-            targetsMax = targets.Length;
-            prevIdx = currentIdx = 0;
+            _targetsMax = targets.Length;
+            _targetHitsRequired = targetHitsRequired;
 
-            StartCoroutine(ShowTarget(targets[0]));
+            Reset();
 	    }
 
         IEnumerator ShowTarget(Target target)
@@ -48,14 +57,32 @@ namespace Volley
 
             do
             {
-                currentIdx = Random.Range(0, targetsMax);
+                _currentIdx = Random.Range(0, _targetsMax);
                 yield return null;
-            } while (currentIdx == prevIdx);
+            } while (_currentIdx == _prevIdx);
 
-            Target nextTarget = targets[currentIdx];
-            prevIdx = currentIdx;
+            Target nextTarget = targets[_currentIdx];
+            _prevIdx = _currentIdx;
 
             StartCoroutine(ShowTarget(nextTarget));
+        }
+
+        public void Reset()
+        {
+            _prevIdx = _currentIdx = 0;
+            _currentHits = 0;
+
+            foreach (var target in targets)
+            {
+                target.Deactivate();
+            }
+
+            Core.BroadcastEvent("OnTargetScoreUpdate", this, 0);
+        }
+
+        public void StartRound()
+        {
+            StartCoroutine(ShowTarget(targets[0]));
         }
     }
 }
