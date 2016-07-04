@@ -10,8 +10,8 @@ public class Highscore : MonoBehaviour
     public int addSpeed = 5;
 
     Text _label;
-    int _currentScore;
     int _targetScore;
+    float _currentScore;
 
 	// Use this for initialization
 	void Start ()
@@ -33,15 +33,14 @@ public class Highscore : MonoBehaviour
     {
         if (Input.GetKeyDown(resetStatsKey))
         {
-            PlayerPrefs.SetInt("highscore", 0);
-            OnHighscoreUpdate(this, 0);
-            _currentScore = 0;
+            ResetHighScore();
         }
         
-        if (_currentScore != _targetScore)
+        if (_currentScore < _targetScore)
         {
-            _currentScore += (int)(addSpeed * Time.deltaTime);
-            _label.text = TopScore.ToString();
+            _currentScore += addSpeed * Time.deltaTime;
+            _currentScore = Mathf.Clamp(_currentScore, 0, _targetScore);
+            _label.text = _currentScore.ToString("F0");
         }
     }
 
@@ -50,7 +49,7 @@ public class Highscore : MonoBehaviour
         if (args is int)
         {
             int highscore = (int)args;
-            if (highscore > TopScore)
+            if (highscore > TopScore || highscore == 0) // Higher or reset
             {
                 TopScore = _targetScore = highscore;
                 PlayerPrefs.SetInt("highscore", highscore);
@@ -58,5 +57,12 @@ public class Highscore : MonoBehaviour
         }
 
         return null;
+    }
+
+    void ResetHighScore()
+    {
+        PlayerPrefs.SetInt("highscore", 0); // Reset prefs
+        _currentScore = _targetScore = 0;   // Reset current/target scores
+        _label.text = "0";                  // Reset score label text
     }
 }
