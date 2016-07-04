@@ -6,14 +6,8 @@ namespace Volley
 {
     public class GameManager : MonoBehaviour
     {
-        static GameManager _Instance;
-        public static GameManager Instance
-        {
-            get
-            {
-                return _Instance;
-            }
-        }
+        public static GameManager Instance { get; private set; }
+
         public int Score { get; set; }
         public int Combo { get; set; }
         public int comboMax = 5;
@@ -32,7 +26,8 @@ namespace Volley
 
         void Awake()
         {
-            _Instance = this;
+            if(Instance == null)
+                Instance = this;
 
             Core.SubscribeEvent("OnBallHit", OnBallHit);
             Core.SubscribeEvent("OnTargetHit", OnTargetHit);
@@ -57,7 +52,7 @@ namespace Volley
 
         void OnDestroy()
         {
-            _Instance = null;
+            Instance = null;
         }
 
         object OnBallHit(object sender, object args)
@@ -96,7 +91,20 @@ namespace Volley
             }
             return null;
         }
+
+        public void Reset()
+        {
+            Score = 0;
+            Core.BroadcastEvent("OnScoreUpdate", this, Score);
+
+            Combo = 1;
+            Core.BroadcastEvent("OnComboUpdate", this, Combo);
+
+            Timer = 0;
+        }
     }
+
+    
 
     [Serializable]
     public struct HitRating

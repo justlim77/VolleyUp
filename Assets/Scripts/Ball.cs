@@ -92,8 +92,9 @@ namespace Volley
             if (i != null)
             {
                 i.Interact(this, null);
+                VolleySpawner.Instance.Despawn(gameObject);
                 //Destroy(this.gameObject);
-                StartCoroutine(InvokeDespawn(2.0f));
+                //StartCoroutine(InvokeDespawn(2.0f));
             }
 
             foreach (int layerIndex in layerIndices)

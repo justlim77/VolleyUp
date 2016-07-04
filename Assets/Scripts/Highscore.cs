@@ -33,7 +33,7 @@ public class Highscore : MonoBehaviour
     {
         if (Input.GetKeyDown(resetStatsKey))
         {
-            ResetHighScore();
+            Reset();
         }
         
         if (_currentScore < _targetScore)
@@ -59,10 +59,10 @@ public class Highscore : MonoBehaviour
         return null;
     }
 
-    void ResetHighScore()
+    void Reset()
     {
-        PlayerPrefs.SetInt("highscore", 0); // Reset prefs
-        _currentScore = _targetScore = 0;   // Reset current/target scores
-        _label.text = "0";                  // Reset score label text
+        PlayerPrefs.SetInt("highscore", 0);             // Reset prefs
+        _currentScore = _targetScore = TopScore = 0;   // Reset current/target scores
+        _label.text = "0";                              // Reset score label text
     }
 }

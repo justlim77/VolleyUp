@@ -44,7 +44,7 @@ namespace Volley
                 Vector3 vel = FrameVelocity.normalized;
 
                 Vector3 externalForce = new Vector3(horizontalForce.x * _cachedTorsoTransform.forward.z, horizontalForce.y * vel.y, horizontalForce.z * vel.z);
-                Logger.Log("Collision velocity: " + vel);
+                //Logger.Log("Collision velocity: " + vel);
                 // Check how close the collision happened
                 //float dist = Vector3.Distance(transform.position, col.transform.position);
                 float dist = Mathf.Abs(transform.position.y - col.transform.position.y);

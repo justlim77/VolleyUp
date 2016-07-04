@@ -6,14 +6,7 @@ using System.Collections.Generic;
 
 public class Logger : MonoBehaviour
 {
-    static Logger _Instance;
-    public static Logger Instance
-    {
-        get
-        {
-            return _Instance;
-        }
-    }
+    public static Logger Instance { get; private set; }
 
     static bool _EnableLogger;
     public bool EnableLogger = true;
@@ -26,7 +19,8 @@ public class Logger : MonoBehaviour
 
     void Awake()
     {
-        _Instance = this;
+        if (Instance == null)
+            Instance = this;
 
         _Label = Label;
         _Scrollbar = GetComponent<ScrollRect>().verticalScrollbar;
@@ -35,7 +29,7 @@ public class Logger : MonoBehaviour
 
     void OnDestroy()
     {
-        _Instance = null;
+        Instance = null;
     }
 
 	// Use this for initialization
@@ -49,6 +43,7 @@ public class Logger : MonoBehaviour
     {
         if (!_EnableLogger)
             return;
+
         string msg = string.Format("[{0:F2}] > {1}\n", Time.time, args.ToString());
         _Label.text = "";
         _Lines.Add(msg);

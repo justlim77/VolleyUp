@@ -18,6 +18,9 @@ namespace Volley
         [Tooltip("Message to display to prompt player to begin game.")]
         public string startMessage;
 
+        [Tooltip("Message to display to prompt player to stand in front of camera")]
+        public string findingMessage;
+
         // private bool to track if progress message has been displayed
         private bool progressDisplayed;
         private float progressGestureTime;
@@ -27,6 +30,9 @@ namespace Volley
         {
             // as an example - detect these user specific gestures
             KinectManager manager = KinectManager.Instance;
+
+            // Check if primary user still exists
+            
 
             foreach(var gesture in gesturesToDetect)
                 manager.DetectGesture(userId, gesture);
@@ -41,8 +47,11 @@ namespace Volley
         {
             if (gestureInfo != null)
             {
-                gestureInfo.text = string.Empty;
+                gestureInfo.text = findingMessage;
             }
+
+            // Reset score
+            GameManager.Instance.Reset();
         }
 
         public void GestureInProgress(long userId, int userIndex, KinectGestures.Gestures gesture,
@@ -95,7 +104,7 @@ namespace Volley
                 if (gesture == KinectGestures.Gestures.UnderhandLeftToss)
                 {
                     GameObject ball = VolleySpawner.Instance.Spawn(KinectManager.Instance.GetJointKinectPosition(userId, (int)joint));
-                    Logger.Log("Spawning " + ball.GetHashCode());
+                    //Logger.Log("Spawning " + ball.GetHashCode());
                 }
 
                 //gestureInfo.text = sGestureText;

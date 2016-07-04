@@ -17,22 +17,8 @@ namespace Volley
         float ExpandFactor { get { return originalScale.x * 6f; } }
         float ShrinkFactor { get { return originalScale.x * 3f; } }
 
-        int _points;
-        public int Points
-        {
-            get
-            {
-                return _points;
-            }
-
-            set
-            {
-                _points = value;
-            }
-        }
-
-        public bool HasInteracted
-        { get; private set; }
+        public int Points { get; set; }
+        public bool HasInteracted { get; private set; }
 
         public void Interact(object sender, object args)
         {
@@ -87,6 +73,7 @@ namespace Volley
 
             yield return null;
         }
+
         IEnumerator Shrink()
         {
             col.enabled = false;

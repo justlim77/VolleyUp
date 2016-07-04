@@ -3262,8 +3262,8 @@ public class KinectManager : MonoBehaviour
 				}
 				
 				Debug.Log("Adding user " + uidIndex + ", ID: " + userId + ", Body: " + bodyIndex);
-                NewTrackedID = userId;  // Track newest player
-                avatarControllers[0].playerId = userId; // BadFix
+
+                //avatarControllers[0].playerId = userId; // TODO: Temp implementation
 
 				dictUserIdToIndex[userId] = bodyIndex;
 				dictUserIdToTime[userId] = Time.time;
@@ -3273,8 +3273,9 @@ public class KinectManager : MonoBehaviour
 				if(liPrimaryUserId == 0 && aUserIndexIds.Length > 0)
 				{
 					liPrimaryUserId = aUserIndexIds[0];  // userId
-					
-					if(liPrimaryUserId != 0)
+                    avatarControllers[0].playerId = liPrimaryUserId; // TODO: Temp implementation
+
+                    if (liPrimaryUserId != 0)
 					{
 						if(calibrationText != null && calibrationText.text != "")
 						{

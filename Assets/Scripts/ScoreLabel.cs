@@ -43,6 +43,11 @@ namespace Volley
             if (args is int)
             {
                 _targetScore = (int)args;
+
+                if (_targetScore == 0)
+                {
+                    _currentScore = 0;
+                    _label.text = _currentScore.ToString("F0");                }
             } 
 
             return null;
