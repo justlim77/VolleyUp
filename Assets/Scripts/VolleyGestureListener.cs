@@ -24,8 +24,7 @@ namespace Volley
         // private bool to track if progress message has been displayed
         private bool progressDisplayed;
         private float progressGestureTime;
-
-
+        
         public void UserDetected(long userId, int userIndex)
         {
             // as an example - detect these user specific gestures
@@ -39,28 +38,17 @@ namespace Volley
             if (gestureInfo != null)
             {
                 gestureInfo.text = startMessage;
+                GameManager.Instance.SetState(GameState.Pregame);
             }
         }
 
         public void UserLost(long userId, int userIndex)
         {
-            KinectManager manager = KinectManager.Instance;
-
             if (gestureInfo != null)
             {
-                if (manager.IsUserTracked(manager.GetPrimaryUserID()))
-                {
-                    Debug.Log("[UserLost] Primary User ID: " + manager.GetPrimaryUserID() + " still detected, aborting...");
-                    return;
-                }
-
-                else
-                {
-                    gestureInfo.text = findingMessage;  // Show waiting for users feedback
-                    GameManager.Instance.Reset();       // Reset score
-                }
+                gestureInfo.text = findingMessage;                  // Show waiting for users feedback
+                GameManager.Instance.SetState(GameState.Waiting);   // Set game state to waiting
             }
-
         }
 
         public void GestureInProgress(long userId, int userIndex, KinectGestures.Gestures gesture,

@@ -7,30 +7,33 @@ namespace Volley
     public class HitLabel : MonoBehaviour
     {
         Text _label;
-        int _targetedHits;
 
         // Use this for initialization
-        void Start ()
+        void Awake()
         {
             _label = GetComponent<Text>();
 
-            TargetManager manager = TargetManager.Instance;
-            _targetedHits = manager.targetHitsRequired;
+            Core.SubscribeEvent("OnHitCountUpdate", OnHitCountUpdate);
+        }
 
-            Core.SubscribeEvent("OnTargetScoreUpdate", OnTargetScoreUpdate);
+        void Start ()
+        {
+
 	    }
 
         void OnDestroy()
         {
-            Core.UnsubscribeEvent("OnTargetScoreUpdate", OnTargetScoreUpdate);
+            Core.UnsubscribeEvent("OnHitCountUpdate", OnHitCountUpdate);
         }
 
-        object OnTargetScoreUpdate(object sender, object args)
+        object OnHitCountUpdate(object sender, object args)
         {
             if (args is int)
             {
                 int currentHits = (int)args;
-                string msg = string.Format("{0}/{1}", currentHits, _targetedHits);
+                TargetManager manager = TargetManager.Instance;
+                int targetedHits = manager.targetHitsRequired;
+                string msg = string.Format("{0}/{1}", currentHits, targetedHits);
 
                 _label.text = msg;
             }

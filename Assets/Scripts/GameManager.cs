@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace Volley
@@ -13,8 +14,7 @@ namespace Volley
         public int comboMax = 5;
         public float comboInterval = 5.0f;
 
-        static bool _Missed;
-        public static bool Missed { get; set; }
+        public float roundEndDelay = 5.0f;
 
         public HitRating perfectRating;
         public HitRating greatRating;
@@ -22,11 +22,12 @@ namespace Volley
 
         public Animator playerAnimator;
 
-        public float ScoreTimer { get; private set; }
+        public float GameTimer { get; private set; }
         public float ComboTimer { get; private set; }
 
         public bool RoundStarted { get; set; }
-        public bool FirstHit { get; set; }
+
+        public GameState GameState { get; set; }
 
         void Awake()
         {
@@ -44,11 +45,11 @@ namespace Volley
 
         void Update()
         {
-            if (!RoundStarted && !FirstHit)
+            if (!RoundStarted)
                 return;
 
             // Game timer
-            ScoreTimer += Time.deltaTime;
+            GameTimer += Time.deltaTime;
 
             // Combo timer
             ComboTimer += Time.deltaTime;
@@ -93,6 +94,7 @@ namespace Volley
                 Combo = Mathf.Clamp(Combo, 1, comboMax);
                 Core.BroadcastEvent("OnComboUpdate", this, Combo);
 
+                // Add points
                 int points = (int)args * Combo;
                 Score += points;
                 Core.BroadcastEvent("OnScoreUpdate", this, Score);
@@ -100,21 +102,54 @@ namespace Volley
                 // Update highscore
                 Core.BroadcastEvent("OnHighscoreUpdate", this, Score);
             }
+
             return null;
         }
 
         public void Reset()
         {
+            RoundStarted = false;
+
+            GameTimer = 0;
+            ComboTimer = 0;
+
             Score = 0;
-            ScoreTimer = 0;
             Core.BroadcastEvent("OnScoreUpdate", this, Score);
 
             Combo = 1;
-            ComboTimer = 0;
             Core.BroadcastEvent("OnComboUpdate", this, Combo);
 
-            RoundStarted = false;
-            Core.BroadcastEvent("OnTargetScoreUpdate", this, 0);
+            TargetManager.Instance.Reset();
+        }
+
+        public void SetState(GameState state)
+        {
+            switch (state)
+            {
+                case GameState.Waiting:
+                    Reset();
+                    break;
+                case GameState.Pregame:
+                    TargetManager.Instance.ShowTargets();
+                    break;
+                case GameState.Playing:
+                    RoundStarted = true;
+                    Core.BroadcastEvent("OnNotificationUpdate", this, "");
+                    break;
+                case GameState.End:
+                    RoundStarted = false;
+                    StartCoroutine(GameEndSequence());
+                    break;
+            }
+        }
+
+        public IEnumerator GameEndSequence()
+        {
+            Core.BroadcastEvent("OnNotificationUpdate", this, "You've hit all targets!");
+
+            yield return new WaitForSeconds(3);
+
+            SetState(GameState.Waiting);
         }
     }
 
@@ -125,5 +160,13 @@ namespace Volley
         public float RangeMin;
         public float RangeMax;
         public Color Color;
+    }
+
+    public enum GameState
+    {
+        Waiting,
+        Pregame,
+        Playing,
+        End
     }
 }

@@ -11,9 +11,17 @@ namespace Volley
         public static TargetManager Instance { get; private set; }
 
         int _targetsMax;
-        int _targetHitsRequired;
-        int _currentHits;
+        public int _currentHits;
         int _prevIdx, _currentIdx;
+        bool _firstHit;
+
+        bool HitAllTargets
+        {
+            get
+            {
+                return _currentHits >= targetHitsRequired;
+            }
+        }
 
         void Awake()
         {
@@ -33,15 +41,25 @@ namespace Volley
         object OnTargetHitUpdate(object sender, object args)
         {
             _currentHits++;
-            _currentHits = Mathf.Clamp(_currentHits, 0, _targetHitsRequired);
-            Core.BroadcastEvent("OnTargetScoreUpdate", this, _currentHits);
+            Debug.Log(_currentHits);
+            _currentHits = Mathf.Clamp(_currentHits, 0, targetHitsRequired);
+
+            Core.BroadcastEvent("OnHitCountUpdate", this, _currentHits);
+
+            // If required amount of targets are hit, change game state to end
+            if (HitAllTargets == true)
+            {
+                Core.BroadcastEvent("OnNotificationUpdate", this, "All targets hit!");
+                DeactivateAllTargets();
+                GameManager.Instance.SetState(GameState.End);
+            }
+
             return null;
         }
 
 	    void Start ()
         {
             _targetsMax = targets.Length;
-            _targetHitsRequired = targetHitsRequired;
 
             Reset();
 	    }
@@ -53,6 +71,13 @@ namespace Volley
             while (target.HasInteracted == false)
             {
                 yield return null;
+            }
+
+            // Check for first hit to start round timer
+            if (_firstHit)
+            {
+                _firstHit = false;
+                GameManager.Instance.SetState(GameState.Playing);
             }
 
             do
@@ -68,21 +93,29 @@ namespace Volley
         }
 
         public void Reset()
-        {
+        {   
+            // Reset parameters
             _prevIdx = _currentIdx = 0;
             _currentHits = 0;
+            _firstHit = true;
 
+            StopAllCoroutines();    // Ensure all coroutines are stopped
+            DeactivateAllTargets(); // Deactivate any remaining targets
+
+            Core.BroadcastEvent("OnHitCountUpdate", this, 0);
+        }
+
+        public void ShowTargets()
+        {
+            StartCoroutine(ShowTarget(targets[0]));     // Show the first target
+        }
+
+        void DeactivateAllTargets()
+        {
             foreach (var target in targets)
             {
                 target.Deactivate();
             }
-
-            Core.BroadcastEvent("OnTargetScoreUpdate", this, 0);
-        }
-
-        public void StartRound()
-        {
-            StartCoroutine(ShowTarget(targets[0]));
         }
     }
 }

@@ -26,6 +26,7 @@ namespace Volley
                 return;
 
             Core.BroadcastEvent("OnTargetHit", this, Points * Multiplier);
+            Core.BroadcastEvent("OnTargetHitUpdate", this, null);
             Deactivate();
         }
 

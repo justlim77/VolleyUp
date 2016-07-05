@@ -3301,13 +3301,12 @@ public class KinectManager : MonoBehaviour
                 AvatarController avatarMain = avatarControllers[0];
                 if (avatarMain && avatarMain.playerIndex == 0)
                 {
-                    Debug.Log("avatarMain playerIndex is 0... Setting avatarMain playerIndex to primary user ID");
                     avatarMain.playerId = liPrimaryUserId;
                     avatarMain.SuccessfulCalibration(liPrimaryUserId);
                 }
 
-                Debug.Log("Avatar user " + avatarControllers[0].playerIndex + ", ID: " + avatarControllers[0].playerId);
-                Debug.Log("Primary user ID after adding: " + liPrimaryUserId);
+                Debug.Log("[CalibrateUser] Main Avatar user ID: " + avatarControllers[0].playerId);
+                Debug.Log("[CalibrateUser] Primary user ID: " + liPrimaryUserId);
 
                 // add the gestures to be detected by all users, if any
                 foreach (KinectGestures.Gestures gesture in playerCommonGestures)
@@ -3405,16 +3404,16 @@ public class KinectManager : MonoBehaviour
 			}
 		}
 
-        // TODO: Avatar round-robin
-        AvatarController avatarMain = avatarControllers[0];
-        if (avatarMain && avatarMain.playerIndex == 0)
-        {
-            Debug.Log("[RemoveUser] Avatar user ID: " + avatarMain.playerId);
-            avatarMain.playerId = liPrimaryUserId;
-        }
+        //// TODO: Avatar round-robin
+        //AvatarController avatarMain = avatarControllers[0];
+        //if (avatarMain && avatarMain.playerIndex == 0)
+        //{
+        //    Debug.Log("[RemoveUser] Avatar user ID: " + avatarMain.playerId);
+        //    avatarMain.playerId = liPrimaryUserId;
+        //}
 
-        Debug.Log("Avatar user " + avatarControllers[0].playerIndex + ", ID: " + avatarControllers[0].playerId);
-        Debug.Log("Primary user ID after removing: " + liPrimaryUserId);
+        Debug.Log("[RemoveUser] Main Avatar user ID: " + avatarControllers[0].playerId);
+        Debug.Log("[RemoveUser] Primary user ID: " + liPrimaryUserId);
 
         //		for(int i = 0; i < avatarControllers.Count; i++)
         //		{
