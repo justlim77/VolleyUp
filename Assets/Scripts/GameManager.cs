@@ -29,6 +29,8 @@ namespace Volley
 
         public GameState GameState { get; set; }
 
+        bool _pendingReset;
+
         void Awake()
         {
             if(Instance == null)
@@ -45,21 +47,26 @@ namespace Volley
 
         void Update()
         {
-            if (!RoundStarted)
-                return;
-
-            // Game timer
-            GameTimer += Time.deltaTime;
-
-            // Combo timer
-            ComboTimer += Time.deltaTime;
-
-            if (ComboTimer > comboInterval)
+            if (_pendingReset)
             {
-                Combo = 1;
-                ComboTimer = 0;
+                _pendingReset = false;
+                KinectManager.Instance.ClearKinectUsers();
             }
 
+            if (RoundStarted)
+            {            
+                // Game timer
+                GameTimer += Time.deltaTime;
+
+                // Combo timer
+                ComboTimer += Time.deltaTime;
+
+                if (ComboTimer > comboInterval)
+                {
+                    Combo = 1;
+                    ComboTimer = 0;
+                }
+            }
         }
 
         void OnDestroy()
@@ -108,6 +115,8 @@ namespace Volley
 
         public void Reset()
         {
+            _pendingReset = true;
+
             RoundStarted = false;
 
             GameTimer = 0;
@@ -146,8 +155,9 @@ namespace Volley
         public IEnumerator GameEndSequence()
         {
             Core.BroadcastEvent("OnNotificationUpdate", this, "You've hit all targets!");
+            TargetManager.Instance.DeactivateAllTargets();
 
-            yield return new WaitForSeconds(3);
+            yield return new WaitForSeconds(roundEndDelay);
 
             SetState(GameState.Waiting);
         }

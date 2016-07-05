@@ -1,11 +1,15 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using Volley;
 
 public class EventTester : MonoBehaviour
 {
 
     public List<EventKeyPair> eventKeyPairList = new List<EventKeyPair>();
+
+    public KeyCode clearKinectUsersKey;
+    public KeyCode restartGameKey;
 
 	// Use this for initialization
 	void Start () {
@@ -32,6 +36,16 @@ public class EventTester : MonoBehaviour
                         break;
                 }
             }
+        }
+
+        if (Input.GetKeyDown(clearKinectUsersKey))
+        {
+            KinectManager.Instance.ClearKinectUsers();
+        }
+
+        if (Input.GetKeyDown(restartGameKey))
+        {
+            GameManager.Instance.SetState(GameState.Waiting);
         }
 	}
 }

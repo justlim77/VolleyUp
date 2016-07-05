@@ -25,8 +25,11 @@ namespace Volley
             if (HasInteracted)
                 return;
 
-            Core.BroadcastEvent("OnTargetHit", this, Points * Multiplier);
+            int totalPoints = Points * Multiplier;
+
+            Core.BroadcastEvent("OnTargetHit", this, totalPoints);
             Core.BroadcastEvent("OnTargetHitUpdate", this, null);
+
             Deactivate();
         }
 

@@ -29,6 +29,7 @@ namespace Volley
                 Instance = this;
 
             Core.SubscribeEvent("OnTargetHitUpdate", OnTargetHitUpdate);
+            Core.SubscribeEvent("OnHitReqChange", OnHitReqChange);
         }
 
         void OnDestroy()
@@ -36,12 +37,12 @@ namespace Volley
             Instance = null;
 
             Core.UnsubscribeEvent("OnTargetHitUpdate", OnTargetHitUpdate);
+            Core.UnsubscribeEvent("OnHitReqChange", OnHitReqChange);
         }
 
         object OnTargetHitUpdate(object sender, object args)
         {
             _currentHits++;
-            Debug.Log(_currentHits);
             _currentHits = Mathf.Clamp(_currentHits, 0, targetHitsRequired);
 
             Core.BroadcastEvent("OnHitCountUpdate", this, _currentHits);
@@ -57,7 +58,21 @@ namespace Volley
             return null;
         }
 
-	    void Start ()
+        object OnHitReqChange(object sender, object args)
+        {
+            if (args is int)
+            {
+                int interval = (int)args;
+                targetHitsRequired += interval;
+                targetHitsRequired = Mathf.Clamp(targetHitsRequired, 1, 100);
+
+                Core.BroadcastEvent("OnHitCountUpdate", this, _currentHits);
+            }
+            return null;
+        }
+
+
+        void Start ()
         {
             _targetsMax = targets.Length;
 
@@ -99,7 +114,6 @@ namespace Volley
             _currentHits = 0;
             _firstHit = true;
 
-            StopAllCoroutines();    // Ensure all coroutines are stopped
             DeactivateAllTargets(); // Deactivate any remaining targets
 
             Core.BroadcastEvent("OnHitCountUpdate", this, 0);
@@ -110,8 +124,10 @@ namespace Volley
             StartCoroutine(ShowTarget(targets[0]));     // Show the first target
         }
 
-        void DeactivateAllTargets()
+        public void DeactivateAllTargets()
         {
+            StopAllCoroutines();    // Ensure all coroutines are stopped
+
             foreach (var target in targets)
             {
                 target.Deactivate();
