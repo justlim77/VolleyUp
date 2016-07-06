@@ -14,7 +14,10 @@ public class AudioManager : MonoBehaviour
 
     public AudioClip[] volleyHitClips;
     public AudioClip[] volleySpikeClips;
-
+    public AudioClip[] humanGruntOKClips;
+    public AudioClip[] positiveClips;
+    public AudioClip[] wooshClips;
+    public AudioClip[] timerClips;
 
     void Awake()
     {
@@ -49,6 +52,22 @@ public class AudioManager : MonoBehaviour
 
     public void PlayRandomClipAtPoint(SoundType soundType, Vector3 position)
     {
+        AudioSource.PlayClipAtPoint(GetClip(soundType), position, sfxVolume);
+    }
+
+    public void PlayOneShot(SoundType soundType)
+    {
+        sfxSource.pitch = RandomizePitch();
+        sfxSource.PlayOneShot(GetClip(soundType), sfxVolume);
+    }
+
+    float RandomizePitch()
+    {
+        return Random.Range(sfxVolume - pitchVariation, sfxVolume + pitchVariation);
+    }
+
+    AudioClip GetClip(SoundType soundType)
+    {
         AudioClip clip = null;
 
         switch (soundType)
@@ -59,9 +78,21 @@ public class AudioManager : MonoBehaviour
             case SoundType.VolleySpike:
                 clip = volleySpikeClips[Random.Range(0, volleySpikeClips.Length)];
                 break;
+            case SoundType.HumanGruntOk:
+                clip = humanGruntOKClips[Random.Range(0, humanGruntOKClips.Length)];
+                break;
+            case SoundType.Positive:
+                clip = positiveClips[Random.Range(0, positiveClips.Length)];
+                break;
+            case SoundType.Whoosh:
+                clip = wooshClips[Random.Range(0, wooshClips.Length)];
+                break;
+            case SoundType.Timer:
+                clip = timerClips[Random.Range(0, timerClips.Length)];
+                break;
         }
 
-        AudioSource.PlayClipAtPoint(clip, position, sfxVolume);
+        return clip;
     }
 
     public void SetBGMVolume(float volume)
@@ -79,5 +110,9 @@ public class AudioManager : MonoBehaviour
 public enum SoundType
 {
     VolleyHit,
-    VolleySpike
+    VolleySpike,
+    HumanGruntOk,
+    Whoosh,
+    Positive,
+    Timer
 }

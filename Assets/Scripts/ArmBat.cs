@@ -10,19 +10,21 @@ namespace Volley
         public Vector3 horizontalForce;
         public Vector3 throwingForce;
 
+        public HumanBodyBones armBone;
+
         public Vector3 FrameVelocity { get; set; }
         public Vector3 PrevPosition { get; set; }
 
         Collider col;
         Vector3 _cachedVel;
-        Transform _cachedTorsoTransform;
+        Transform _cachedBoneTransform;
 
         // Use this for initialization
         void Start ()
         {
             col = this.GetComponent<Collider>();
 
-            _cachedTorsoTransform = GameManager.Instance.playerAnimator.GetBoneTransform(HumanBodyBones.Chest);
+            _cachedBoneTransform = GameManager.Instance.playerAnimator.GetBoneTransform(armBone);
 	    }
 	
         void FixedUpdate()
@@ -43,7 +45,8 @@ namespace Volley
                 //Vector3 vel = col.attachedRigidbody.velocity.normalized;
                 Vector3 vel = FrameVelocity.normalized;
 
-                Vector3 externalForce = new Vector3(horizontalForce.x * _cachedTorsoTransform.forward.z, horizontalForce.y * vel.y, horizontalForce.z * vel.z);
+                Vector3 externalForce = new Vector3(horizontalForce.x * vel.x, horizontalForce.y * vel.y, horizontalForce.z * vel.z);
+                //Logger.Log(_cachedBoneTransform.forward.z);
                 //Logger.Log("Collision velocity: " + vel);
                 // Check how close the collision happened
                 //float dist = Vector3.Distance(transform.position, col.transform.position);
@@ -51,10 +54,6 @@ namespace Volley
                 //Logger.Log("Collision distance: " + dist);
                 Vector3 force = hitForce + externalForce;
                 i.Interact(this, force);
-                if (countScore)
-                {
-                    Core.BroadcastEvent("OnBallHit", this, dist);
-                }
 
                 // Audio feedback
                 AudioManager.Instance.PlayRandomClipAtPoint(SoundType.VolleyHit, transform.position);

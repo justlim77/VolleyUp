@@ -38,6 +38,7 @@ namespace Volley
             if (gestureInfo != null)
             {
                 gestureInfo.text = startMessage;
+                AudioManager.Instance.PlayOneShot(SoundType.HumanGruntOk);
                 GameManager.Instance.SetState(GameState.Pregame);
             }
         }

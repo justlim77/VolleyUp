@@ -82,6 +82,9 @@ namespace Volley
             rb.AddForce(force);
             BallCount++;
             //Logger.Log(string.Format("{0} Ball Spawned at {1}", BallCount, pos));
+
+            AudioManager.Instance.PlayOneShot(SoundType.Whoosh);     // Play whoosh sound
+
             return ball;
         }
 

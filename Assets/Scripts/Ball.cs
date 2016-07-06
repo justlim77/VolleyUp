@@ -91,7 +91,9 @@ namespace Volley
             IInteractable i = col.gameObject.GetComponent<IInteractable>();
             if (i != null)
             {
-                i.Interact(this, null);
+                float dist = Vector3.Distance(col.transform.position, transform.position);
+
+                i.Interact(this, dist);
                 VolleySpawner.Instance.Despawn(gameObject);
                 //Destroy(this.gameObject);
                 //StartCoroutine(InvokeDespawn(2.0f));

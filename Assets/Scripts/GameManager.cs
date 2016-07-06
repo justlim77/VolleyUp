@@ -156,7 +156,7 @@ namespace Volley
         {
             Core.BroadcastEvent("OnNotificationUpdate", this, "You've hit all targets!");
             TargetManager.Instance.DeactivateAllTargets();
-
+            AudioManager.Instance.PlayOneShot(SoundType.Positive);
             yield return new WaitForSeconds(roundEndDelay);
 
             SetState(GameState.Waiting);

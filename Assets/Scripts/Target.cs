@@ -25,10 +25,19 @@ namespace Volley
             if (HasInteracted)
                 return;
 
+            if (args is float)
+            {
+                //Logger.Log(args);
+                float dist = (float)args;
+                Core.BroadcastEvent("OnBallHit", this, dist);
+            }
+
             int totalPoints = Points * Multiplier;
 
             Core.BroadcastEvent("OnTargetHit", this, totalPoints);
             Core.BroadcastEvent("OnTargetHitUpdate", this, null);
+
+            AudioManager.Instance.PlayOneShot(SoundType.Timer);
 
             Deactivate();
         }
@@ -93,6 +102,8 @@ namespace Volley
             }
 
             mr.enabled = false;
+
+            transform.localScale = Vector3.zero;
 
             yield return null;
         }
