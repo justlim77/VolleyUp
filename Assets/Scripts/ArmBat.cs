@@ -45,7 +45,9 @@ namespace Volley
                 //Vector3 vel = col.attachedRigidbody.velocity.normalized;
                 Vector3 vel = FrameVelocity.normalized;
 
-                Vector3 externalForce = new Vector3(horizontalForce.x * vel.x, horizontalForce.y * vel.y, horizontalForce.z * vel.z);
+               // Vector3 externalForce = new Vector3(horizontalForce.x * vel.x, horizontalForce.y * vel.y, horizontalForce.z * vel.z);
+                Vector3 externalForce = new Vector3(horizontalForce.x * _cachedBoneTransform.forward.z, horizontalForce.y * vel.y, horizontalForce.z * vel.z);
+
                 //Logger.Log(_cachedBoneTransform.forward.z);
                 //Logger.Log("Collision velocity: " + vel);
                 // Check how close the collision happened

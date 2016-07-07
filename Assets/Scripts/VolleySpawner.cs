@@ -15,6 +15,7 @@ namespace Volley
         public HumanBodyBones spawnAtBone;
         public Vector3 spawnOffset;
         public int spawnAmount;
+        public bool useOffset;
 
         [Header("Player hitting hand")]
         public ArmBat armBat;
@@ -70,6 +71,11 @@ namespace Volley
         public GameObject Spawn(Vector3 position)
         {
             Vector3 pos = _spawnBoneTransform.position + spawnOffset;
+
+            if (useOffset)
+            {
+
+            }
 
             //GameObject ball = (GameObject)Instantiate(objectPrefab, pos, Quaternion.identity);
             GameObject ball = objectPool.FastInstantiate(pos, Quaternion.identity);
