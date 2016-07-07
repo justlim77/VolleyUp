@@ -34,14 +34,16 @@ namespace Volley
 
         public void Interact(object sender, object args)
         {
-            col.isTrigger = false;
-            _hit = true;
+            col.isTrigger = false;      // Make ball "solid"
+            _hit = true;                // Trigger flag to "hit"
+
             if (args is Vector3)
             {
                 Vector3 force = (Vector3)args;
                 rb.AddForce(force);
             }
 
+            // Play random spike sound
             int rand = UnityEngine.Random.Range(0, 2);
             if(rand == 0)
                 AudioManager.Instance.PlayRandomClipAtPoint(SoundType.VolleyHit, transform.position);
@@ -81,17 +83,18 @@ namespace Volley
             Vector3 localVel = transform.InverseTransformDirection(rb.velocity);
             if (col != null)
             {
-                //col.isTrigger = localVel.y > 0 ? true : false;
+                col.isTrigger = localVel.y > 0 ? false : true;
             }
 
         }
 
         void OnCollisionEnter(Collision col)
         {
+            // Check if hit with target OR floor/net/etc SOLID ONLY
             IInteractable i = col.gameObject.GetComponent<IInteractable>();
             if (i != null)
             {
-                float dist = Vector3.Distance(col.transform.position, transform.position);
+                float dist = Vector3.Distance(col.transform.position, transform.position);      // Calculate points
 
                 i.Interact(this, dist);
                 VolleySpawner.Instance.Despawn(gameObject);
@@ -120,28 +123,35 @@ namespace Volley
         void Activate()
         {
             if (col != null)
+            {
                 col.isTrigger = false;
+                col.enabled = true;
+            }
         }
 
         public void OnFastInstantiate()
         {
             CancelInvoke();
+            StopAllCoroutines();
             name = "Ball_Spawned";
             _hit = false;
-            col.isTrigger = true;
-            Invoke("Activate", 1.5f);
+            Invoke("Activate", 1.0f);
             StartCoroutine(InvokeDespawn(autoDestructTime));            
         }
 
         public void OnFastDestroy()
         {
-            name = "Ball_Cached";
-            if(rb != null)
-                rb.velocity = Vector3.zero;
-            if (col != null)
-                col.isTrigger = true;
             CancelInvoke();
             StopAllCoroutines();
+            name = "Ball_Cached";
+            _hit = false;
+            if(rb)
+                rb.velocity = Vector3.zero;
+            if (col)
+            {
+                col.enabled = false;
+                col.isTrigger = false;         
+            }                     
         }
     }
 }

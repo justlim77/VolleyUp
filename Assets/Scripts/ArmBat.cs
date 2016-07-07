@@ -11,6 +11,8 @@ namespace Volley
         public Vector3 throwingForce;
 
         public HumanBodyBones armBone;
+        public bool followTarget;
+        public Transform handTransform;
 
         public Vector3 FrameVelocity { get; set; }
         public Vector3 PrevPosition { get; set; }
@@ -26,7 +28,15 @@ namespace Volley
 
             _cachedBoneTransform = GameManager.Instance.playerAnimator.GetBoneTransform(armBone);
 	    }
-	
+
+        void Update()
+        {
+            if (followTarget && handTransform != null)
+            {
+                FollowTarget();
+            }
+        }
+
         void FixedUpdate()
         {
             // Keep an average velocity due to fixed update irregularity, else we will occassionally get 0 velocity
@@ -61,5 +71,18 @@ namespace Volley
                 AudioManager.Instance.PlayRandomClipAtPoint(SoundType.VolleyHit, transform.position);
             }
         }
+
+        void FollowTarget()
+        {
+            transform.position = handTransform.position;
+        }
     }
 }
+
+
+/*
+
+    Original joint)shoulderLT rot -1.9427, -0.0498, 1.6662
+    oringnal jiont shodler RT rot -1.9427, -0.0498, 1.6661
+
+*/

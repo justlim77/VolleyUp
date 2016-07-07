@@ -17,7 +17,7 @@ public class DrawCollider : MonoBehaviour
         {
             center = collider.bounds.center;
             radius = collider.bounds.size.x * 0.5f;
-            Gizmos.DrawWireSphere(center, radius);
+            Gizmos.DrawWireCube(center, collider.bounds.size);
         }
     }
 

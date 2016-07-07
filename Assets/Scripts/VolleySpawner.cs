@@ -28,6 +28,7 @@ namespace Volley
         public bool testSpawn = false;
         public float spawnDelay = 1.0f;
 
+        public float unitOffset;
         Transform _spawnBoneTransform;
 
         public static int BallCount
@@ -70,11 +71,14 @@ namespace Volley
 
         public GameObject Spawn(Vector3 position)
         {
-            Vector3 pos = _spawnBoneTransform.position + spawnOffset;
+            Vector3 pos = _spawnBoneTransform.position;
 
             if (useOffset)
             {
-
+                Vector3 dir = (_spawnBoneTransform.right * unitOffset) + _spawnBoneTransform.position;
+                //dir.Normalize();
+                //pos += dir;
+                pos = dir;
             }
 
             //GameObject ball = (GameObject)Instantiate(objectPrefab, pos, Quaternion.identity);
