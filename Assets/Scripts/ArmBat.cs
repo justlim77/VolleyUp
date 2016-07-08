@@ -13,6 +13,11 @@ namespace Volley
         public HumanBodyBones armBone;
         public bool followTarget;
         public Transform handTransform;
+        public float rightDirOffset = 1.5f;
+
+        [Header("Height safe zone")]
+        public float safeY;
+        public float yBoost;
 
         public Vector3 FrameVelocity { get; set; }
         public Vector3 PrevPosition { get; set; }
@@ -53,10 +58,23 @@ namespace Volley
                 //float hitMag = col.relativeVelocity.magnitude;
                 //Debug.Log("Collision magnitude: " + hitMag);
                 //Vector3 vel = col.attachedRigidbody.velocity.normalized;
+                // Check interaction height
+                float interactHeight = col.transform.position.y;
+                float yForce = horizontalForce.y;
+                if (interactHeight < safeY)
+                {
+                    yForce *= yBoost;
+                }
+
                 Vector3 vel = FrameVelocity.normalized;
 
-               // Vector3 externalForce = new Vector3(horizontalForce.x * vel.x, horizontalForce.y * vel.y, horizontalForce.z * vel.z);
-                Vector3 externalForce = new Vector3(horizontalForce.x * _cachedBoneTransform.forward.z, horizontalForce.y * vel.y, horizontalForce.z * vel.z);
+                if (vel.x > 0f)
+                {
+                    vel.x *= rightDirOffset;
+                }
+
+                Vector3 externalForce = new Vector3(horizontalForce.x * vel.x, yForce * vel.y, horizontalForce.z * vel.z);
+                //Vector3 externalForce = new Vector3(horizontalForce.x * _cachedBoneTransform.forward.z, horizontalForce.y * vel.y, horizontalForce.z * vel.z);
 
                 //Logger.Log(_cachedBoneTransform.forward.z);
                 //Logger.Log("Collision velocity: " + vel);

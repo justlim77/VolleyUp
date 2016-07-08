@@ -42,6 +42,8 @@ namespace Volley
 
         void Start()
         {
+            Cursor.visible = false;
+
             Reset();
         }
 
@@ -65,6 +67,7 @@ namespace Volley
                 {
                     Combo = 1;
                     ComboTimer = 0;
+                    Core.BroadcastEvent("OnComboUpdate", this, Combo);
                 }
             }
         }

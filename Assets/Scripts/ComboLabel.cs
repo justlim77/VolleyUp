@@ -36,6 +36,10 @@ namespace Volley
                 {
                     msg = "COMBO MAX";
                 }
+                else if (combo == 1)
+                {
+                    msg = "";
+                }
 
                 _label.text = msg;
             } 
