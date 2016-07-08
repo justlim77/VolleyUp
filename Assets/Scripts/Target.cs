@@ -70,6 +70,8 @@ namespace Volley
 
         IEnumerator Expand()
         {
+            this.transform.localScale = Vector3.zero;
+
             col.enabled = mr.enabled = true;
 
             Vector3 scale = this.transform.localScale;
@@ -90,6 +92,8 @@ namespace Volley
         IEnumerator Shrink()
         {
             col.enabled = false;
+
+            this.transform.localScale = originalScale;
 
             Vector3 scale = this.transform.localScale;
 

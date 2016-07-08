@@ -52,7 +52,7 @@ public class AvatarController : MonoBehaviour
 	public bool groundedFeet = false;
 
 	// userId of the player
-	[NonSerialized]
+	//[NonSerialized]
 	public Int64 playerId = 0;
 
 

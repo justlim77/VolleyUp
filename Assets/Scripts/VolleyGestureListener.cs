@@ -29,26 +29,59 @@ namespace Volley
         {
             // as an example - detect these user specific gestures
             KinectManager manager = KinectManager.Instance;
+            GameManager gameManager = GameManager.Instance;
 
             Debug.Log("[UserDetected] PrimaryUserID: " + manager.GetPrimaryUserID() + ", DetectedUserID: " + userId);
 
             foreach(var gesture in gesturesToDetect)
                 manager.DetectGesture(userId, gesture);
 
+            for (int i = 0; i < gameManager.maxPlayers; i++)
+            {
+                if (manager.avatarControllers[i] != null)
+                {
+                    if (manager.avatarControllers[i].playerId != 0)
+                    {
+                        gameManager.SpawnPlayer(i);
+                    }
+                }
+            }
+
+            gameManager.numOfPlayers++;
+            gameManager.numOfPlayers = Mathf.Clamp(gameManager.numOfPlayers, 0, gameManager.maxPlayers);
+
             if (gestureInfo != null)
             {
                 gestureInfo.text = startMessage;
                 AudioManager.Instance.PlayOneShot(SoundType.HumanGruntOk);
-                GameManager.Instance.SetState(GameState.Pregame);
+                if(gameManager.numOfPlayers == 1)
+                    gameManager.SetState(GameState.Pregame);
             }
         }
 
         public void UserLost(long userId, int userIndex)
         {
+            KinectManager manager = KinectManager.Instance;
+            GameManager gameManager = GameManager.Instance;
+            gameManager.numOfPlayers--;
+            gameManager.numOfPlayers = Mathf.Clamp(gameManager.numOfPlayers, 0, gameManager.maxPlayers);
+
             if (gestureInfo != null)
             {
                 gestureInfo.text = findingMessage;                  // Show waiting for users feedback
-                GameManager.Instance.SetState(GameState.Waiting);   // Set game state to waiting
+                if(gameManager.numOfPlayers > 1)
+                    gameManager.SetState(GameState.Waiting);   // Set game state to waiting
+            }
+
+            for (int i = 0; i < gameManager.maxPlayers; i++)
+            {
+                if (manager.avatarControllers[i] != null)
+                {
+                    if (manager.avatarControllers[i].playerId != 0)
+                    {
+                        gameManager.RemovePlayer(i);
+                    }
+                }
             }
         }
 

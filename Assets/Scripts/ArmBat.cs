@@ -55,6 +55,15 @@ namespace Volley
             IInteractable i = col.gameObject.GetComponent<IInteractable>();
             if (i != null)
             {
+                Ball ball = col.gameObject.GetComponent<Ball>();
+
+                if (ball.Hit)
+                    return;
+                if (ball != null)
+                {
+                    ball.Hit = true;
+                }
+
                 //float hitMag = col.relativeVelocity.magnitude;
                 //Debug.Log("Collision magnitude: " + hitMag);
                 //Vector3 vel = col.attachedRigidbody.velocity.normalized;
@@ -65,6 +74,8 @@ namespace Volley
                 {
                     yForce *= yBoost;
                 }
+
+                //Logger.Log("yForce: " + yForce + " interactHeight: " + interactHeight);
 
                 Vector3 vel = FrameVelocity.normalized;
 

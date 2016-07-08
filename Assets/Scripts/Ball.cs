@@ -16,7 +16,10 @@ namespace Volley
         Vector3 _cachedVel;
         int[] layerIndices;
         int _points;
-        bool _hit;
+        public bool Hit
+        {
+            get; set;
+        }
         bool _grounded;
 
         public int Points
@@ -35,7 +38,7 @@ namespace Volley
         public void Interact(object sender, object args)
         {
             col.isTrigger = false;      // Make ball "solid"
-            _hit = true;                // Trigger flag to "hit"
+            Hit = true;                // Trigger flag to "hit"
 
             if (args is Vector3)
             {
@@ -77,7 +80,7 @@ namespace Volley
 	    // Update is called once per frame
 	    void Update ()
         {
-            if ((_hit || _grounded) == true)
+            if ((Hit || _grounded) == true)
                 return;
 
             Vector3 localVel = transform.InverseTransformDirection(rb.velocity);
@@ -134,7 +137,7 @@ namespace Volley
             CancelInvoke();
             StopAllCoroutines();
             name = "Ball_Spawned";
-            _hit = false;
+            Hit = false;
             Invoke("Activate", 1.0f);
             StartCoroutine(InvokeDespawn(autoDestructTime));            
         }
@@ -144,7 +147,7 @@ namespace Volley
             CancelInvoke();
             StopAllCoroutines();
             name = "Ball_Cached";
-            _hit = false;
+            Hit = false;
             if(rb)
                 rb.velocity = Vector3.zero;
             if (col)

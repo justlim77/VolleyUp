@@ -109,12 +109,13 @@ namespace Volley
 
         public void Reset()
         {   
+            DeactivateAllTargets(); // Deactivate any remaining targets
+
             // Reset parameters
             _prevIdx = _currentIdx = 0;
             _currentHits = 0;
             _firstHit = true;
 
-            DeactivateAllTargets(); // Deactivate any remaining targets
 
             Core.BroadcastEvent("OnHitCountUpdate", this, 0);
         }

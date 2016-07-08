@@ -16,11 +16,17 @@ namespace Volley
 
         public float roundEndDelay = 5.0f;
 
+        public GameObject[] players;
+        public int numOfPlayers;
+        public int maxPlayers = 2;
+
         public HitRating perfectRating;
         public HitRating greatRating;
         public HitRating goodRating;
 
         public Animator playerAnimator;
+        public VolleySpawner volleySpawner;
+        public Transform[] offsetNodes;
 
         public float GameTimer { get; private set; }
         public float ComboTimer { get; private set; }
@@ -42,8 +48,9 @@ namespace Volley
 
         void Start()
         {
+#if !UNITY_EDITOR
             Cursor.visible = false;
-
+#endif
             Reset();
         }
 
@@ -120,6 +127,11 @@ namespace Volley
         {
             _pendingReset = true;
 
+            foreach (var player in players)
+            {
+                player.SetActive(false);
+            }
+
             RoundStarted = false;
 
             GameTimer = 0;
@@ -163,6 +175,30 @@ namespace Volley
             yield return new WaitForSeconds(roundEndDelay);
 
             SetState(GameState.Waiting);
+        }
+
+        public void SpawnPlayer(int idx)
+        {
+            players[idx].SetActive(true);
+
+            if (idx == 0 && GameManager.Instance.numOfPlayers == 0)
+                offsetNodes[idx].transform.position = Vector3.zero;
+            else if (idx == 0)
+                offsetNodes[idx].transform.position = new Vector3(2, 0, 0);
+            else if (idx == 1)
+            {
+                offsetNodes[idx].transform.position = new Vector3(-1, 0, 0);
+            }
+
+            volleySpawner.SetBone(idx);
+
+        }
+
+        public void RemovePlayer(int idx)
+        {
+            players[idx].SetActive(false);
+
+            
         }
     }
 
