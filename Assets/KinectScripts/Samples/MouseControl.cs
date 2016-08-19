@@ -174,7 +174,7 @@ public class MouseControl
 			
 //			if(debugText)
 //			{
-//				if(!debugText.GetComponent<GUIText>().text.Contains("ScrPos"))
+//				if(!debugText.text.Contains("ScrPos"))
 //				{
 //					string sDebug = string.Format("\nScrPos: ({0:F0}, {1:F0})", screenX, screenY);
 //					debugText.GetComponent<GUIText> ().text += sDebug;

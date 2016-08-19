@@ -112,7 +112,7 @@ public class SkeletonOverlayer : MonoBehaviour
 							{
 //								if(debugText && joint == 0)
 //								{
-//									debugText.GetComponent<GUIText>().text = string.Format("{0} - {1}\nRealPos: {2}", 
+//									debugText.text = string.Format("{0} - {1}\nRealPos: {2}", 
 //									                                       (KinectInterop.JointType)joint, posJoint,
 //									                                       manager.GetJointPosition(userId, joint));
 //								}

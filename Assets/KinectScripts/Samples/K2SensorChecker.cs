@@ -65,7 +65,7 @@ public class K2SensorChecker : MonoBehaviour
 					
 					if(infoText != null)
 					{
-						infoText.GetComponent<GUIText>().text = bSensorAvailable ? "Sensor is connected." : "No sensor is connected.";
+						infoText.text = bSensorAvailable ? "Sensor is connected." : "No sensor is connected.";
 					}
 				}
 			}
@@ -82,7 +82,7 @@ public class K2SensorChecker : MonoBehaviour
 			
 			if(infoText != null)
 			{
-				infoText.GetComponent<GUIText>().text = ex.Message;
+				infoText.text = ex.Message;
 			}
 		}
 		

@@ -348,8 +348,9 @@ public class InteractionManager : MonoBehaviour
 
 			foreach(MonoBehaviour monoScript in monoScripts)
 			{
-				if(typeof(InteractionListenerInterface).IsAssignableFrom(monoScript.GetType()) &&
-					monoScript.enabled)
+//				if(typeof(InteractionListenerInterface).IsAssignableFrom(monoScript.GetType()) &&
+//					monoScript.enabled)
+				if((monoScript is InteractionListenerInterface) && monoScript.enabled)
 				{
 					interactionListeners.Add(monoScript);
 				}
@@ -360,12 +361,8 @@ public class InteractionManager : MonoBehaviour
 	
 	void OnDestroy()
 	{
-		// uninitialize Kinect interaction
-		if(interactionInited)
-		{
-			interactionInited = false;
-			instance = null;
-		}
+		interactionInited = false;
+		instance = null;
 	}
 	
 	void Update () 

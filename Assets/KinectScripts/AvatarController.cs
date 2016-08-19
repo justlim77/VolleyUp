@@ -51,8 +51,11 @@ public class AvatarController : MonoBehaviour
 	[Tooltip("Whether the avatar's feet must stick to the ground.")]
 	public bool groundedFeet = false;
 
+	[Tooltip("Vertical offset of the avatar to the user's spine-base.")]
+	public float verticalOffset = 0f;
+
 	// userId of the player
-	//[NonSerialized]
+	[NonSerialized]
 	public Int64 playerId = 0;
 
 
@@ -101,7 +104,7 @@ public class AvatarController : MonoBehaviour
 	// grounder constants and variables
 	private const int raycastLayers = ~2;  // Ignore Raycast
 	private const float maxFootDistanceGround = 0.05f;  // maximum distance from lower foot to the ground
-	private const float maxFootDistanceTime = 1.0f;  // maximum allowed time, the lower foot to be distant from the ground
+	private const float maxFootDistanceTime = 0.5f; // 1.0f;  // maximum allowed time, the lower foot to be distant from the ground
 	private Transform leftFoot, rightFoot;
 
 	private float fFootDistanceInitial = 0f;
@@ -716,7 +719,7 @@ public class AvatarController : MonoBehaviour
 			{
 				Vector3 cameraPos = posRelativeToCamera.transform.position;
 				Vector3 bodyRootPos = bodyRoot != null ? bodyRoot.position : transform.position;
-				Vector3 hipCenterPos = bodyRoot != null ? bodyRoot.position : bones[0].position;
+				Vector3 hipCenterPos = bodyRoot != null ? bodyRoot.position : (bones != null && bones.Length > 0 && bones[0] != null ? bones[0].position : Vector3.zero);
 
 				float yRelToAvatar = 0f;
 				if(verticalMovement)
@@ -756,6 +759,13 @@ public class AvatarController : MonoBehaviour
 		{
 			// workaround for obeying the physics (e.g. gravity falling)
 			targetPos.y = bodyRoot != null ? bodyRoot.position.y : transform.position.y;
+		}
+
+		if (verticalMovement && verticalOffset != 0f && 
+			bones[0] != null && bones[3] != null) 
+		{
+			Vector3 dirSpine = bones[3].position - bones[0].position;
+			targetPos += dirSpine.normalized * verticalOffset;
 		}
 
 		if(groundedFeet)

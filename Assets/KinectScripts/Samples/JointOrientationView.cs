@@ -46,7 +46,7 @@ public class JointOrientationView : MonoBehaviour
 					if(debugText)
 					{
 						Vector3 vRotAngles = qRotObject.eulerAngles;
-						debugText.GetComponent<GUIText>().text = string.Format("{0} - R({1:000}, {2:000}, {3:000})", trackedJoint, 
+						debugText.text = string.Format("{0} - R({1:000}, {2:000}, {3:000})", trackedJoint, 
 						                                       vRotAngles.x, vRotAngles.y, vRotAngles.z);
 					}
 

@@ -219,7 +219,7 @@ public class GrabDropScript : MonoBehaviour
 				}
 			}
 			
-			infoGuiText.GetComponent<GUIText>().text = sInfo;
+			infoGuiText.text = sInfo;
 		}
 	}
 	

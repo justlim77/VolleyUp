@@ -20,8 +20,9 @@ public class LocateAvatarsAndGestureListeners : MonoBehaviour
 			// locate the available avatar controllers
 			foreach(MonoBehaviour monoScript in monoScripts)
 			{
-				if(typeof(AvatarController).IsAssignableFrom(monoScript.GetType()) &&
-				   monoScript.enabled)
+//				if(typeof(AvatarController).IsAssignableFrom(monoScript.GetType()) &&
+//				   monoScript.enabled)
+				if((monoScript is AvatarController) && monoScript.enabled)
 				{
 					AvatarController avatar = (AvatarController)monoScript;
 					manager.avatarControllers.Add(avatar);
@@ -32,8 +33,9 @@ public class LocateAvatarsAndGestureListeners : MonoBehaviour
 			manager.gestureManager = null;
 			foreach(MonoBehaviour monoScript in monoScripts)
 			{
-				if(typeof(KinectGestures).IsAssignableFrom(monoScript.GetType()) && 
-				   monoScript.enabled)
+//				if(typeof(KinectGestures).IsAssignableFrom(monoScript.GetType()) && 
+//				   monoScript.enabled)
+				if((monoScript is KinectGestures) && monoScript.enabled)
 				{
 					manager.gestureManager = (KinectGestures)monoScript;
 					break;
@@ -45,8 +47,9 @@ public class LocateAvatarsAndGestureListeners : MonoBehaviour
 
 			foreach(MonoBehaviour monoScript in monoScripts)
 			{
-				if(typeof(KinectGestures.GestureListenerInterface).IsAssignableFrom(monoScript.GetType()) &&
-				   monoScript.enabled)
+//				if(typeof(KinectGestures.GestureListenerInterface).IsAssignableFrom(monoScript.GetType()) &&
+//				   monoScript.enabled)
+				if((monoScript is KinectGestures.GestureListenerInterface) && monoScript.enabled)
 				{
 					//KinectGestures.GestureListenerInterface gl = (KinectGestures.GestureListenerInterface)monoScript;
 					manager.gestureListeners.Add(monoScript);

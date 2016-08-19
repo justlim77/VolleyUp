@@ -38,8 +38,9 @@ public class PortraitBackground : MonoBehaviour
 
 	void Start () 
 	{
-		KinectManager kinectManager = KinectManager.Instance;
+		instance = this;
 
+		KinectManager kinectManager = KinectManager.Instance;
 		if(kinectManager && kinectManager.IsInitialized())
 		{
 			float fFactorDW = 0f;
@@ -76,7 +77,6 @@ public class PortraitBackground : MonoBehaviour
 			}
 
 			backgroundRect = new Rect(dOffsetX, 0, fScreenWidth, Screen.height);
-			instance = this;
 		}
 	}
 }

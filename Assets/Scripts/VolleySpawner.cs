@@ -40,7 +40,6 @@ namespace Volley
 	    void Start ()
         {
             _spawnBoneTransform[0] = GameManager.Instance.players[0].GetComponent<Animator>().GetBoneTransform(spawnAtBone);
-            _spawnBoneTransform[1] = GameManager.Instance.players[1].GetComponent<Animator>().GetBoneTransform(spawnAtBone);
 
             objectPool.Init(transform);
 
@@ -73,38 +72,31 @@ namespace Volley
         public GameObject Spawn(Vector3 position)
         {
             GameManager gameManager = GameManager.Instance;
-            for (int i = 0; i < gameManager.maxPlayers; i++)
+            Vector3 pos = _spawnBoneTransform[0].position;
+
+            if (useOffset)
             {
-                if (gameManager.players[i].activeSelf == false)
-                    return null;
-                Vector3 pos = _spawnBoneTransform[i].position;
-
-                if (useOffset)
-                {
-                    Vector3 dir = (_spawnBoneTransform[i].right * unitOffset) + _spawnBoneTransform[i].position;
-                    //dir.Normalize();
-                    //pos += dir;
-                    pos = dir;
-                }
-
-                //GameObject ball = (GameObject)Instantiate(objectPrefab, pos, Quaternion.identity);
-                GameObject ball = objectPool.FastInstantiate(pos, Quaternion.identity);
-                Rigidbody rb = ball.GetComponent<Rigidbody>();
-
-                Vector3 torque = new Vector3(20, 20, 20);
-                rb.AddTorque(torque);
-
-                Vector3 force = throwForce * throwMultiplier;
-                rb.AddForce(force);
-                BallCount++;
-                //Logger.Log(string.Format("{0} Ball Spawned at {1}", BallCount, pos));
-
-                AudioManager.Instance.PlayOneShot(SoundType.Whoosh);     // Play whoosh sound
-
-                return ball;
+                Vector3 dir = (_spawnBoneTransform[0].right * unitOffset) + _spawnBoneTransform[0].position;
+                //dir.Normalize();
+                //pos += dir;
+                pos = dir;
             }
 
-            return null;
+            //GameObject ball = (GameObject)Instantiate(objectPrefab, pos, Quaternion.identity);
+            GameObject ball = objectPool.FastInstantiate(pos, Quaternion.identity);
+            Rigidbody rb = ball.GetComponent<Rigidbody>();
+
+            Vector3 torque = new Vector3(20, 20, 20);
+            rb.AddTorque(torque);
+
+            Vector3 force = throwForce * throwMultiplier;
+            rb.AddForce(force);
+            BallCount++;
+            //Logger.Log(string.Format("{0} Ball Spawned at {1}", BallCount, pos));
+
+            AudioManager.Instance.PlayOneShot(SoundType.Whoosh);     // Play whoosh sound
+
+            return ball;
         }
 
         public void Despawn(GameObject sceneObject)

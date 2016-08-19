@@ -35,7 +35,7 @@ public class LinePainter : MonoBehaviour
 		{
 			if(infoText)
 			{
-				infoText.GetComponent<GUIText>().text = "Grip hand to start drawing. Press [U] to undo the last line.";
+				infoText.text = "Grip hand to start drawing. Press [U] to undo the last line.";
 			}
 		}
 

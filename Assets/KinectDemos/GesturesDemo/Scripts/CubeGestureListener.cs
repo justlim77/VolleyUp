@@ -101,7 +101,7 @@ public class CubeGestureListener : MonoBehaviour, KinectGestures.GestureListener
 
 		if(gestureInfo != null)
 		{
-			gestureInfo.GetComponent<GUIText>().text = "Swipe left, right or up to change the slides.";
+			gestureInfo.text = "Swipe left, right or up to change the slides.";
 		}
 	}
 
@@ -118,7 +118,7 @@ public class CubeGestureListener : MonoBehaviour, KinectGestures.GestureListener
 		
 		if(gestureInfo != null)
 		{
-			gestureInfo.GetComponent<GUIText>().text = string.Empty;
+			gestureInfo.text = string.Empty;
 		}
 	}
 
@@ -143,7 +143,7 @@ public class CubeGestureListener : MonoBehaviour, KinectGestures.GestureListener
 			if(gestureInfo != null)
 			{
 				string sGestureText = string.Format ("{0} - {1:F0}%", gesture, screenPos.z * 100f);
-				gestureInfo.GetComponent<GUIText>().text = sGestureText;
+				gestureInfo.text = sGestureText;
 				
 				progressDisplayed = true;
 				progressGestureTime = Time.realtimeSinceStartup;
@@ -155,7 +155,7 @@ public class CubeGestureListener : MonoBehaviour, KinectGestures.GestureListener
 			if(gestureInfo != null)
 			{
 				string sGestureText = string.Format ("{0} - {1:F0} degrees", gesture, screenPos.z);
-				gestureInfo.GetComponent<GUIText>().text = sGestureText;
+				gestureInfo.text = sGestureText;
 				
 				progressDisplayed = true;
 				progressGestureTime = Time.realtimeSinceStartup;
@@ -166,7 +166,7 @@ public class CubeGestureListener : MonoBehaviour, KinectGestures.GestureListener
 			if(gestureInfo != null)
 			{
 				string sGestureText = string.Format ("{0} - progress: {1:F0}%", gesture, progress * 100);
-				gestureInfo.GetComponent<GUIText>().text = sGestureText;
+				gestureInfo.text = sGestureText;
 				
 				progressDisplayed = true;
 				progressGestureTime = Time.realtimeSinceStartup;
@@ -194,7 +194,7 @@ public class CubeGestureListener : MonoBehaviour, KinectGestures.GestureListener
 		if(gestureInfo != null)
 		{
 			string sGestureText = gesture + " detected";
-			gestureInfo.GetComponent<GUIText>().text = sGestureText;
+			gestureInfo.text = sGestureText;
 		}
 		
 		if(gesture == KinectGestures.Gestures.SwipeLeft)
@@ -229,7 +229,7 @@ public class CubeGestureListener : MonoBehaviour, KinectGestures.GestureListener
 			
 			if(gestureInfo != null)
 			{
-				gestureInfo.GetComponent<GUIText>().text = String.Empty;
+				gestureInfo.text = String.Empty;
 			}
 		}
 		
@@ -247,7 +247,7 @@ public class CubeGestureListener : MonoBehaviour, KinectGestures.GestureListener
 		if(progressDisplayed && ((Time.realtimeSinceStartup - progressGestureTime) > 2f))
 		{
 			progressDisplayed = false;
-			gestureInfo.GetComponent<GUIText>().text = String.Empty;
+			gestureInfo.text = String.Empty;
 
 			Debug.Log("Forced progress to end.");
 		}

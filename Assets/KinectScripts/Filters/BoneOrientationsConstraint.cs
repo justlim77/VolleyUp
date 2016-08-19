@@ -136,7 +136,7 @@ public class BoneOrientationsConstraint
 //				if(debugText != null && (Time.time - currentTime) >= 0.5f)
 //				{
 //					currentTime = Time.time;
-//					//debugText.GetComponent<GUIText>().text = sDebugText;
+//					//debugText.text = sDebugText;
 //				}
 //
 //				//Debug.Log(sDebugText);

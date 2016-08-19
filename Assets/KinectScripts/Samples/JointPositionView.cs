@@ -73,7 +73,7 @@ public class JointPositionView : MonoBehaviour
 
 					if(debugText)
 					{
-						debugText.GetComponent<GUIText>().text = string.Format("{0} - ({1:F3}, {2:F3}, {3:F3})", trackedJoint, 
+						debugText.text = string.Format("{0} - ({1:F3}, {2:F3}, {3:F3})", trackedJoint, 
 						                                                       vPosObject.x, vPosObject.y, vPosObject.z);
 					}
 

@@ -240,6 +240,8 @@ public class VisualGestureManager : MonoBehaviour
 	
 	void Start() 
 	{
+		instance = this;
+
 		try 
 		{
 			// get sensor data
@@ -284,29 +286,28 @@ public class VisualGestureManager : MonoBehaviour
 				
 				foreach(MonoBehaviour monoScript in monoScripts)
 				{
-					if(typeof(VisualGestureListenerInterface).IsAssignableFrom(monoScript.GetType()) &&
-					   monoScript.enabled)
+//					if(typeof(VisualGestureListenerInterface).IsAssignableFrom(monoScript.GetType()) &&
+//					   monoScript.enabled)
+					if((monoScript is VisualGestureListenerInterface) && monoScript.enabled)
 					{
 						visualGestureListeners.Add(monoScript);
 					}
 				}
 			}
 
-			// all set
-			instance = this;
 			isVisualGestureInitialized = true;
 		} 
 		catch(DllNotFoundException ex)
 		{
 			Debug.LogError(ex.ToString());
 			if(debugText != null)
-				debugText.GetComponent<GUIText>().text = "Please check the Kinect and FT-Library installations.";
+				debugText.text = "Please check the Kinect and FT-Library installations.";
 		}
 		catch (Exception ex) 
 		{
 			Debug.LogError(ex.ToString());
 			if(debugText != null)
-				debugText.GetComponent<GUIText>().text = ex.Message;
+				debugText.text = ex.Message;
 		}
 	}
 

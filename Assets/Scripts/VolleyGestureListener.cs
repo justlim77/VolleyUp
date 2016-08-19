@@ -9,6 +9,9 @@ namespace Volley
 {
     public class VolleyGestureListener : MonoBehaviour, KinectGestures.GestureListenerInterface
     {
+        [Tooltip("Index of the player, tracked by this component. 0 means the 1st player, 1 - the 2nd one, 2 - the 3rd one, etc.")]
+        public int playerIndex = 0;
+
         [Tooltip("Text to display gesture-listener messages and gesture information.")]
         public Text gestureInfo;
 
@@ -21,14 +24,37 @@ namespace Volley
         [Tooltip("Message to display to prompt player to stand in front of camera")]
         public string findingMessage;
 
+        // singleton instance of the class
+        private static VolleyGestureListener instance = null;
+
         // private bool to track if progress message has been displayed
         private bool progressDisplayed;
         private float progressGestureTime;
-        
+
+        /// <summary>
+        /// Gets the singleton CubeGestureListener instance.
+        /// </summary>
+        /// <value>The CubeGestureListener instance.</value>
+        public static VolleyGestureListener Instance
+        {
+            get
+            {
+                return instance;
+            }
+        }
+
+        /// <summary>
+        /// Invoked when a new user is detected. Here you can start gesture tracking by invoking KinectManager.DetectGesture()-function.
+        /// </summary>
+        /// <param name="userId">User ID</param>
+        /// <param name="userIndex">User index</param>
         public void UserDetected(long userId, int userIndex)
         {
-            // as an example - detect these user specific gestures
+            // the gestures are allowed for the primary user only
             KinectManager manager = KinectManager.Instance;
+            if (!manager || (userIndex != playerIndex))
+                return;
+
             GameManager gameManager = GameManager.Instance;
 
             Debug.Log("[UserDetected] PrimaryUserID: " + manager.GetPrimaryUserID() + ", DetectedUserID: " + userId);
@@ -36,55 +62,44 @@ namespace Volley
             foreach(var gesture in gesturesToDetect)
                 manager.DetectGesture(userId, gesture);
 
-            for (int i = 0; i < gameManager.maxPlayers; i++)
-            {
-                if (manager.avatarControllers[i] != null)
-                {
-                    if (manager.avatarControllers[i].playerId != 0)
-                    {
-                        gameManager.SpawnPlayer(i);
-                    }
-                }
-            }
-
-            gameManager.numOfPlayers++;
-            gameManager.numOfPlayers = Mathf.Clamp(gameManager.numOfPlayers, 0, gameManager.maxPlayers);
+            gameManager.SpawnPlayer(playerIndex);
 
             if (gestureInfo != null)
             {
                 gestureInfo.text = startMessage;
                 AudioManager.Instance.PlayOneShot(SoundType.HumanGruntOk);
-                if(gameManager.numOfPlayers == 1)
-                    gameManager.SetState(GameState.Pregame);
+                gameManager.SetState(GameState.Pregame);
             }
         }
 
+        /// <summary>
+        /// Invoked when a user gets lost. All tracked gestures for this user are cleared automatically.
+        /// </summary>
+        /// <param name="userId">User ID</param>
+        /// <param name="userIndex">User index</param>
         public void UserLost(long userId, int userIndex)
         {
             KinectManager manager = KinectManager.Instance;
             GameManager gameManager = GameManager.Instance;
-            gameManager.numOfPlayers--;
-            gameManager.numOfPlayers = Mathf.Clamp(gameManager.numOfPlayers, 0, gameManager.maxPlayers);
 
             if (gestureInfo != null)
             {
                 gestureInfo.text = findingMessage;                  // Show waiting for users feedback
-                if(gameManager.numOfPlayers > 1)
-                    gameManager.SetState(GameState.Waiting);   // Set game state to waiting
+                gameManager.SetState(GameState.Waiting);   // Set game state to waiting
             }
 
-            for (int i = 0; i < gameManager.maxPlayers; i++)
-            {
-                if (manager.avatarControllers[i] != null)
-                {
-                    if (manager.avatarControllers[i].playerId != 0)
-                    {
-                        gameManager.RemovePlayer(i);
-                    }
-                }
-            }
+            gameManager.RemovePlayer(playerIndex);
         }
 
+        /// <summary>
+        /// Invoked when a gesture is in progress.
+        /// </summary>
+        /// <param name="userId">User ID</param>
+        /// <param name="userIndex">User index</param>
+        /// <param name="gesture">Gesture type</param>
+        /// <param name="progress">Gesture progress [0..1]</param>
+        /// <param name="joint">Joint type</param>
+        /// <param name="screenPos">Normalized viewport position</param>
         public void GestureInProgress(long userId, int userIndex, KinectGestures.Gestures gesture,
                                       float progress, KinectInterop.JointType joint, Vector3 screenPos)
         {
@@ -123,22 +138,33 @@ namespace Volley
             }
         }
 
+        /// <summary>
+        /// Invoked if a gesture is completed.
+        /// </summary>
+        /// <returns>true</returns>
+        /// <c>false</c>
+        /// <param name="userId">User ID</param>
+        /// <param name="userIndex">User index</param>
+        /// <param name="gesture">Gesture type</param>
+        /// <param name="joint">Joint type</param>
+        /// <param name="screenPos">Normalized viewport position</param>
         public bool GestureCompleted(long userId, int userIndex, KinectGestures.Gestures gesture,
                                       KinectInterop.JointType joint, Vector3 screenPos)
         {
+            // the gestures are allowed for the primary user only
+            if (userIndex != playerIndex)
+                return false;
+
             if (progressDisplayed)
                 return true;
 
-            string sGestureText = gesture + " detected";
             if (gestureInfo != null)
             {
+                string sGestureText = gesture + " detected";
                 if (gesture == KinectGestures.Gestures.UnderhandLeftToss)
-                {
-                    GameObject ball = VolleySpawner.Instance.Spawn(KinectManager.Instance.GetJointKinectPosition(userId, (int)joint));
-                    //Logger.Log("Spawning " + ball.GetHashCode());
-                }
+                    VolleySpawner.Instance.Spawn(KinectManager.Instance.GetJointKinectPosition(userId, (int)joint));
 
-                //gestureInfo.text = sGestureText;
+                gestureInfo.text = sGestureText;
             }
 
 

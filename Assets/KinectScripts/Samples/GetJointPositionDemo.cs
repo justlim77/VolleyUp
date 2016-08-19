@@ -33,7 +33,7 @@ public class GetJointPositionDemo : MonoBehaviour
 	}
 
 
-	void Update () 
+	void Update() 
 	{
 		if(isSaving)
 		{
@@ -74,11 +74,16 @@ public class GetJointPositionDemo : MonoBehaviour
 					{
 						if((secondsToSave == 0f) || ((Time.time - saveStartTime) <= secondsToSave))
 						{
+#if !UNITY_WSA
 							using(StreamWriter writer = File.AppendText(saveFilePath))
 							{
 								string sLine = string.Format("{0:F3},{1},{2:F3},{3:F3},{4:F3}", Time.time, ((KinectInterop.JointType)joint).ToString(), jointPos.x, jointPos.y, jointPos.z);
 								writer.WriteLine(sLine);
 							}
+#else
+							string sLine = string.Format("{0:F3},{1},{2:F3},{3:F3},{4:F3}", Time.time, ((KinectInterop.JointType)joint).ToString(), jointPos.x, jointPos.y, jointPos.z);
+							Debug.Log(sLine);
+#endif
 						}
 					}
 				}

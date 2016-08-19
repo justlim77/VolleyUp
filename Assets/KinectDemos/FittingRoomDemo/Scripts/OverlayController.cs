@@ -16,8 +16,8 @@ public class OverlayController : MonoBehaviour
 	[Range(-0.1f, 0.1f)]
 	public float adjustedCameraOffset = 0f;
 
-	[Tooltip("GUI-Text used to display the overlay controller messages.")]
-	public GUIText debugText;
+//	[Tooltip("GUI-Text used to display the overlay controller messages.")]
+//	public GUIText debugText;
 
 
 	// variable to track the current camera offset
@@ -46,21 +46,6 @@ public class OverlayController : MonoBehaviour
 			{
 				backgroundCamera.transform.position = new Vector3(0f, manager.sensorHeight, 0f);
 				backgroundCamera.transform.rotation = Quaternion.Euler(-manager.sensorAngle, 0f, 0f);
-			}
-
-			if(debugText != null)
-			{
-				debugText.GetComponent<GUIText>().text = "Please stand in T-pose for calibration.";
-			}
-		}
-		else
-		{
-			string sMessage = "KinectManager is missing or not initialized";
-			Debug.LogError(sMessage);
-
-			if(debugText != null)
-			{
-				debugText.GetComponent<GUIText>().text = sMessage;
 			}
 		}
 	}
@@ -101,41 +86,6 @@ public class OverlayController : MonoBehaviour
 					backgroundImage.texture = manager.GetUsersClrTex();
 				}
 			}
-
-			MonoBehaviour[] monoScripts = FindObjectsOfType(typeof(MonoBehaviour)) as MonoBehaviour[];
-
-			foreach(MonoBehaviour monoScript in monoScripts)
-			{
-				if(typeof(AvatarScaler).IsAssignableFrom(monoScript.GetType()) &&
-				   monoScript.enabled)
-				{
-					AvatarScaler scaler = (AvatarScaler)monoScript;
-
-					int userIndex = scaler.playerIndex;
-					long userId = manager.GetUserIdByIndex(userIndex);
-
-					if(userId != scaler.currentUserId)
-					{
-						scaler.currentUserId = userId;
-					
-						if(userId != 0)
-						{
-							scaler.GetUserBodySize(true, true, true);
-							scaler.FixJointsBeforeScale();
-							scaler.ScaleAvatar(0f);
-						}
-					}
-				}
-			}
-
-			if(!manager.IsUserDetected())
-			{
-				if(debugText != null)
-				{
-					debugText.GetComponent<GUIText>().text = "Please stand in T-pose for calibration.";
-				}
-			}
-
 		}
 
 	}

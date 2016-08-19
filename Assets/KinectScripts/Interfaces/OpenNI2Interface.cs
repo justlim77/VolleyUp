@@ -194,12 +194,13 @@ public class OpenNI2Interface : DepthSensorInterface
 			string sZipFileName = !bArchX64 ? "OpenNI2UnityInterface.x86.zip" : "OpenNI2UnityInterface.x64.zip";
 			long iTargetSize = KinectInterop.GetUnzippedEntrySize(sZipFileName, "UnityInterface2.dll");
 			
-			FileInfo targetFile = new FileInfo(sTargetLib);
-			return targetFile.Exists && targetFile.Length == iTargetSize;
+//			FileInfo targetFile = new FileInfo(sTargetLib);
+//			return targetFile.Exists && targetFile.Length == iTargetSize;
+			return KinectInterop.IsFileExists(sTargetLib, iTargetSize);
 		}
 
 		// check openni directory and resources
-		string sOpenNIPath = System.Environment.GetEnvironmentVariable(!bArchX64 ? "OPENNI2_REDIST" : "OPENNI2_REDIST64");
+		string sOpenNIPath = KinectInterop.GetEnvironmentVariable(!bArchX64 ? "OPENNI2_REDIST" : "OPENNI2_REDIST64");
 		if(sOpenNIPath == String.Empty || !Directory.Exists(sOpenNIPath))
 		{
 			Debug.LogWarning("OpenNI2-folder not found (check OPENNI2_REDIST).");
@@ -213,7 +214,7 @@ public class OpenNI2Interface : DepthSensorInterface
 		}
 		
 		// check nite directory and resources
-		string sNiTEPath = System.Environment.GetEnvironmentVariable(!bArchX64 ? "NITE2_REDIST" : "NITE2_REDIST64");
+		string sNiTEPath = KinectInterop.GetEnvironmentVariable(!bArchX64 ? "NITE2_REDIST" : "NITE2_REDIST64");
 		if(sNiTEPath == String.Empty || !Directory.Exists(sNiTEPath))
 		{
 			Debug.LogWarning("NiTE2-folder not found (check NITE2_REDIST).");
@@ -515,8 +516,8 @@ public class OpenNI2Interface : DepthSensorInterface
 						if(GetJointPosition(userId, oniJ, ref jointPosition))
 						{
 							float jPosZ = (bIgnoreJointZ && j > 0) ? bodyFrame.bodyData[i].joint[0].kinectPos.z : jointPosition.z * 0.001f;
-							jointData.kinectPos = new Vector3(jointPosition.x * 0.001f, jointPosition.y * 0.001f, jPosZ);;
-							jointData.position = kinectToWorld.MultiplyPoint3x4(jointData.kinectPos);
+							jointData.kinectPos = new Vector3(jointPosition.x * 0.001f, jointPosition.y * 0.001f, jointPosition.z * 0.001f);
+							jointData.position = kinectToWorld.MultiplyPoint3x4(new Vector3(jointPosition.x * 0.001f, jointPosition.y * 0.001f, jPosZ));
 						}
 					}
 					

@@ -116,8 +116,9 @@ public class Kinect2Interface : DepthSensorInterface
 			string sZipFileName = !KinectInterop.Is64bitArchitecture() ? "KinectV2UnityAddin.x86.zip" : "KinectV2UnityAddin.x64.zip";
 			long iTargetSize = KinectInterop.GetUnzippedEntrySize(sZipFileName, "KinectUnityAddin.dll");
 			
-			System.IO.FileInfo targetFile = new System.IO.FileInfo(sTargetLib);
-			return targetFile.Exists && targetFile.Length == iTargetSize;
+//			System.IO.FileInfo targetFile = new System.IO.FileInfo(sTargetLib);
+//			return targetFile.Exists && targetFile.Length == iTargetSize;
+			return KinectInterop.IsFileExists(sTargetLib, iTargetSize);
 		}
 		
 		if(!KinectInterop.Is64bitArchitecture())
@@ -596,8 +597,8 @@ public class Kinect2Interface : DepthSensorInterface
 							if((int)joint.TrackingState != (int)TrackingState.NotTracked)
 							{
 								float jPosZ = (bIgnoreJointZ && j > 0) ? bodyFrame.bodyData[i].joint[0].kinectPos.z : joint.Position.Z;
-								jointData.kinectPos = new Vector3(joint.Position.X, joint.Position.Y, jPosZ);
-								jointData.position = kinectToWorld.MultiplyPoint3x4(jointData.kinectPos);
+								jointData.kinectPos = new Vector3(joint.Position.X, joint.Position.Y, joint.Position.Z);
+								jointData.position = kinectToWorld.MultiplyPoint3x4(new Vector3(joint.Position.X, joint.Position.Y, jPosZ));
 							}
 							
 							jointData.orientation = Quaternion.identity;
@@ -1100,14 +1101,14 @@ public class Kinect2Interface : DepthSensorInterface
 				| FaceFrameFeatures.PointsInColorSpace
 				//| FaceFrameFeatures.PointsInInfraredSpace
 				| FaceFrameFeatures.RotationOrientation
-				//| FaceFrameFeatures.FaceEngagement
-				//| FaceFrameFeatures.Glasses
-				//| FaceFrameFeatures.Happy
-				//| FaceFrameFeatures.LeftEyeClosed
-				//| FaceFrameFeatures.RightEyeClosed
-				//| FaceFrameFeatures.LookingAway
-				//| FaceFrameFeatures.MouthMoved
-				//| FaceFrameFeatures.MouthOpen
+				| FaceFrameFeatures.FaceEngagement
+				| FaceFrameFeatures.Glasses
+				| FaceFrameFeatures.Happy
+				| FaceFrameFeatures.LeftEyeClosed
+				| FaceFrameFeatures.RightEyeClosed
+				| FaceFrameFeatures.LookingAway
+				| FaceFrameFeatures.MouthMoved
+				| FaceFrameFeatures.MouthOpen
 				;
 		
 		// create a face frame source + reader to track each face in the FOV

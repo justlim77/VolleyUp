@@ -30,7 +30,7 @@ public class LoadLevelWithDelay : MonoBehaviour
 
 			if(manager == null || !manager.IsInitialized())
 			{
-				debugText.GetComponent<GUIText>().text = "KinectManager is not initialized!";
+				debugText.text = "KinectManager is not initialized!";
 				levelLoaded = true;
 			}
 		}
@@ -52,7 +52,7 @@ public class LoadLevelWithDelay : MonoBehaviour
 
 				if(debugText != null)
 				{
-					debugText.GetComponent<GUIText>().text = string.Format("Time to the next level: {0:F0} s.", timeRest);
+					debugText.text = string.Format("Time to the next level: {0:F0} s.", timeRest);
 				}
 			}
 		}

@@ -8,7 +8,9 @@ using System.Runtime.InteropServices;
 using System;
 using System.IO;
 using System.Text;
+#if !UNITY_WSA
 using ICSharpCode.SharpZipLib.Zip;
+#endif
 //using OpenCvSharp;
 using UnityEngine.SceneManagement;
 
@@ -19,8 +21,11 @@ using UnityEngine.SceneManagement;
 public class KinectInterop
 {
 	// order of depth sensor interfaces
-	public static Type[] SensorInterfaceOrder = new Type[] { 
-		typeof(Kinect2Interface), typeof(Kinect1Interface), typeof(OpenNI2Interface)
+//	public static Type[] SensorInterfaceOrder = new Type[] { 
+//		typeof(Kinect2Interface), typeof(Kinect1Interface), typeof(OpenNI2Interface)
+//	};
+	public static DepthSensorInterface[] SensorInterfaceOrder = new DepthSensorInterface[] { 
+		new Kinect2Interface(), new Kinect1Interface(), new OpenNI2Interface()
 	};
 
 	// graphics shader level
@@ -48,7 +53,8 @@ public class KinectInterop
 		OpenNIv2 = 3,
 		RealSense = 4,
 
-		DummyK2 = 100
+		DummyK1 = 101,
+		DummyK2 = 102
 	}
 	
 	// Data structures for interfacing C# with the native wrappers
@@ -362,6 +368,9 @@ public class KinectInterop
 		public Material alphaBodyMaterial;
 		public Material erodeBodyMaterial, dilateBodyMaterial, blurBodyMaterial;
 
+		public int erodeIterations;
+		public int dilateIterations;
+
 		public RenderTexture colorBackgroundTexture;
 		public Material colorBackgroundMaterial;
 
@@ -490,22 +499,25 @@ public class KinectInterop
 	{
 		List<DepthSensorInterface> listInterfaces = new List<DepthSensorInterface>();
 
-		var typeInterface = typeof(DepthSensorInterface);
-		//Type[] typesAvailable = typeInterface.Assembly.GetTypes();
+		//var typeInterface = typeof(DepthSensorInterface);
 
 		for(int pass = 0; pass <= 1; pass++)
 		{
 			bool bCopyLibs = (pass != 0);
 
-			foreach(Type type in SensorInterfaceOrder)
+			//foreach(Type type in SensorInterfaceOrder)
+			for(int i = 0; i < SensorInterfaceOrder.Length; i++)
 			{
-				if(typeInterface.IsAssignableFrom(type) && type != typeInterface)
+				DepthSensorInterface sensorInt = SensorInterfaceOrder[i];
+
+				//if(typeInterface.IsAssignableFrom(type) && type != typeInterface)
+				if(sensorInt != null)
 				{
-					DepthSensorInterface sensorInt = null;
+					//DepthSensorInterface sensorInt = null;
 					
 					try 
 					{
-						sensorInt = (DepthSensorInterface)Activator.CreateInstance(type);
+						//sensorInt = (DepthSensorInterface)Activator.CreateInstance(type);
 						
 						bool bIntNeedRestart = false;
 						if(sensorInt.InitSensorInterface(bCopyLibs, ref bIntNeedRestart))
@@ -526,7 +538,7 @@ public class KinectInterop
 							sensorInt = null;
 						}
 					}
-					catch (Exception ex) 
+					catch (Exception /**ex*/) 
 					{
 						//Debug.Log(ex);
 						
@@ -1086,7 +1098,7 @@ public class KinectInterop
 		// wait for buffer release
 		while(sensorData.bodyFrameReady)
 		{
-			System.Threading.Thread.Sleep(1);
+			Sleep(1);
 		}
 
 		// check the id, body count & joint count
@@ -1220,7 +1232,7 @@ public class KinectInterop
 			// wait for buffer release
 			while(sensorData.bodyFrameReady)
 			{
-				System.Threading.Thread.Sleep(1);
+				Sleep(1);
 			}
 			
 			bNewFrame = sensorData.sensorInterface.PollBodyFrame(sensorData, ref bodyFrame, ref kinectToWorld, bIgnoreJointZ);
@@ -1302,7 +1314,7 @@ public class KinectInterop
 			// wait for buffer release
 			while(sensorData.colorImageBufferReady)
 			{
-				System.Threading.Thread.Sleep(1);
+				Sleep(1);
 			}
 			
 			bNewFrame = sensorData.sensorInterface.PollColorFrame(sensorData);
@@ -1347,7 +1359,7 @@ public class KinectInterop
 			// wait for buffer releases
 			while(sensorData.bodyIndexBufferReady || sensorData.depthImageBufferReady)
 			{
-				System.Threading.Thread.Sleep(1);
+				Sleep(1);
 			}
 			
 			bNewFrame = sensorData.sensorInterface.PollDepthFrame(sensorData);
@@ -1442,7 +1454,7 @@ public class KinectInterop
 					// wait for buffer release
 					while(sensorData.depthCoordsBufferReady)
 					{
-						System.Threading.Thread.Sleep(1);
+						Sleep(1);
 					}
 					
 					if(!MapColorFrameToDepthCoords(sensorData, ref sensorData.color2DepthCoords))
@@ -1463,7 +1475,7 @@ public class KinectInterop
 					// wait for buffer release
 					while(sensorData.depthCoordsBufferReady)
 					{
-						System.Threading.Thread.Sleep(1);
+						Sleep(1);
 					}
 					
 					if(!MapDepthFrameToColorCoords(sensorData, ref sensorData.depth2ColorCoords))
@@ -1483,7 +1495,7 @@ public class KinectInterop
 					// wait for buffer release
 					while(sensorData.spaceCoordsBufferReady)
 					{
-						System.Threading.Thread.Sleep(1);
+						Sleep(1);
 					}
 					
 					if(!MapDepthFrameToSpaceCoords(sensorData, ref sensorData.depth2SpaceCoords))
@@ -1772,6 +1784,7 @@ public class KinectInterop
 	// copy source file to the target
 	public static bool CopyFile(string sourceFilePath, string targetFilePath, ref bool bOneCopied, ref bool bAllCopied)
 	{
+#if !UNITY_WSA
 		FileInfo sourceFile = new FileInfo(sourceFilePath);
 		if(!sourceFile.Exists)
 		{
@@ -1796,6 +1809,7 @@ public class KinectInterop
 			
 			return bFileCopied;
 		}
+#endif
 
 		return false;
 	}
@@ -1803,6 +1817,7 @@ public class KinectInterop
 	// Copy a resource file to the target
 	public static bool CopyResourceFile(string targetFilePath, string resFileName, ref bool bOneCopied, ref bool bAllCopied)
 	{
+#if !UNITY_WSA
 		TextAsset textRes = Resources.Load(resFileName, typeof(TextAsset)) as TextAsset;
 		if(textRes == null)
 		{
@@ -1837,13 +1852,15 @@ public class KinectInterop
 				return bFileCopied;
 			}
 		}
-		
+#endif
+
 		return false;
 	}
 
 	// Unzips resource file to the target path
 	public static bool UnzipResourceDirectory(string targetDirPath, string resZipFileName, string checkForDir)
 	{
+#if !UNITY_WSA
 		if(checkForDir != string.Empty && Directory.Exists(checkForDir))
 		{
 			return false;
@@ -1907,15 +1924,20 @@ public class KinectInterop
 		}
 
 		// close the resource stream
-		memStream.Close();
+		//memStream.Close();
+		memStream.Dispose();
 
 		return true;
+#else
+		return false;
+#endif	
 	}
 
 	// Unzips resource file to the target path
 	public static bool UnzipResourceFiles(Dictionary<string, string> dictFilesToUnzip, string resZipFileName, 
 	                                      ref bool bOneCopied, ref bool bAllCopied)
 	{
+#if !UNITY_WSA		
 		TextAsset textRes = Resources.Load(resZipFileName, typeof(TextAsset)) as TextAsset;
 		if(textRes == null || textRes.bytes.Length == 0)
 		{
@@ -1989,14 +2011,19 @@ public class KinectInterop
 		}
 		
 		// close the resource stream
-		memStream.Close();
+		//memStream.Close();
+		memStream.Dispose();
 		
 		return true;
+#else
+		return false;
+#endif
 	}
 	
 	// returns the unzipped file size in bytes, or -1 if the entry is not found in the zip
 	public static long GetUnzippedEntrySize(string resZipFileName, string sEntryName)
 	{
+#if !UNITY_WSA
 		TextAsset textRes = Resources.Load(resZipFileName, typeof(TextAsset)) as TextAsset;
 		if(textRes == null || textRes.bytes.Length == 0)
 		{
@@ -2025,9 +2052,13 @@ public class KinectInterop
 		}
 		
 		// close the resource stream
-		memStream.Close();
+		//memStream.Close();
+		memStream.Dispose();
 		
 		return entryFileSize;
+#else
+		return -1;
+#endif
 	}
 	
 	// returns true if the project is running on 64-bit architecture, false if 32-bit
@@ -2104,45 +2135,46 @@ public class KinectInterop
 	// copies open-cv dlls to the root folder, if needed
 	public static bool IsOpenCvAvailable(ref bool bNeedRestart)
 	{
+		bNeedRestart = false;
+
 		if(IsDirectX11Available())
 		{
 			// use shaders
-			bNeedRestart = false;
 			return true;
 		}
 
-		bool bOneCopied = false, bAllCopied = true;
-		string sTargetPath = GetTargetDllPath(".", Is64bitArchitecture()) + "/";
-		//string sTargetPath = ".";
-		
-		if(!Is64bitArchitecture())
-		{
-			// 32 bit architecture
-			sTargetPath = GetTargetDllPath(".", false) + "/";
-			
-			Dictionary<string, string> dictFilesToUnzip = new Dictionary<string, string>();
-			dictFilesToUnzip["opencv_core2410.dll"] = sTargetPath + "opencv_core2410.dll";
-			dictFilesToUnzip["opencv_imgproc2410.dll"] = sTargetPath + "opencv_imgproc2410.dll";
-			dictFilesToUnzip["msvcp120.dll"] = sTargetPath + "msvcp120.dll";
-			dictFilesToUnzip["msvcr120.dll"] = sTargetPath + "msvcr120.dll";
-			
-			UnzipResourceFiles(dictFilesToUnzip, "opencv.x86.zip", ref bOneCopied, ref bAllCopied);
-		}
-		else
-		{
-			// 64 bit architecture
-			sTargetPath = GetTargetDllPath(".", true) + "/";
-			
-			Dictionary<string, string> dictFilesToUnzip = new Dictionary<string, string>();
-			dictFilesToUnzip["opencv_core2410.dll"] = sTargetPath + "opencv_core2410.dll";
-			dictFilesToUnzip["opencv_imgproc2410.dll"] = sTargetPath + "opencv_imgproc2410.dll";
-			dictFilesToUnzip["msvcp120.dll"] = sTargetPath + "msvcp120.dll";
-			dictFilesToUnzip["msvcr120.dll"] = sTargetPath + "msvcr120.dll";
-			
-			UnzipResourceFiles(dictFilesToUnzip, "opencv.x64.zip", ref bOneCopied, ref bAllCopied);
-		}
-
-		bNeedRestart = (bOneCopied && bAllCopied);
+//		bool bOneCopied = false, bAllCopied = true;
+//		string sTargetPath = GetTargetDllPath(".", Is64bitArchitecture()) + "/";
+//		//string sTargetPath = ".";
+//		
+//		if(!Is64bitArchitecture())
+//		{
+//			// 32 bit architecture
+//			sTargetPath = GetTargetDllPath(".", false) + "/";
+//			
+//			Dictionary<string, string> dictFilesToUnzip = new Dictionary<string, string>();
+//			dictFilesToUnzip["opencv_core2410.dll"] = sTargetPath + "opencv_core2410.dll";
+//			dictFilesToUnzip["opencv_imgproc2410.dll"] = sTargetPath + "opencv_imgproc2410.dll";
+//			dictFilesToUnzip["msvcp120.dll"] = sTargetPath + "msvcp120.dll";
+//			dictFilesToUnzip["msvcr120.dll"] = sTargetPath + "msvcr120.dll";
+//			
+//			UnzipResourceFiles(dictFilesToUnzip, "opencv.x86.zip", ref bOneCopied, ref bAllCopied);
+//		}
+//		else
+//		{
+//			// 64 bit architecture
+//			sTargetPath = GetTargetDllPath(".", true) + "/";
+//			
+//			Dictionary<string, string> dictFilesToUnzip = new Dictionary<string, string>();
+//			dictFilesToUnzip["opencv_core2410.dll"] = sTargetPath + "opencv_core2410.dll";
+//			dictFilesToUnzip["opencv_imgproc2410.dll"] = sTargetPath + "opencv_imgproc2410.dll";
+//			dictFilesToUnzip["msvcp120.dll"] = sTargetPath + "msvcp120.dll";
+//			dictFilesToUnzip["msvcr120.dll"] = sTargetPath + "msvcr120.dll";
+//			
+//			UnzipResourceFiles(dictFilesToUnzip, "opencv.x64.zip", ref bOneCopied, ref bAllCopied);
+//		}
+//
+//		bNeedRestart = (bOneCopied && bAllCopied);
 		
 		return true;
 	}
@@ -2165,10 +2197,10 @@ public class KinectInterop
 			sensorData.dilateBodyMaterial.SetFloat("_TexResY", (float)sensorData.depthImageHeight);
 			//sensorData.dilateBodyMaterial.SetTexture("_MainTex", sensorData.bodyIndexTexture);
 
-			Shader blurBodyShader = Shader.Find("Custom/BlurShader2");
+			Shader blurBodyShader = Shader.Find("Custom/BlurShader5");
 			sensorData.blurBodyMaterial = new Material(blurBodyShader);
 			//sensorData.blurBodyMaterial.SetFloat("_Amount", 1.5f);
-			sensorData.blurBodyMaterial.SetFloat("_BlurSizeXY", 2f);
+			//sensorData.blurBodyMaterial.SetFloat("_BlurSizeXY", 2f);
 
 			if(isHiResPrefered)
 			{
@@ -2274,8 +2306,8 @@ public class KinectInterop
 				if(sensorData.erodeBodyMaterial != null && sensorData.dilateBodyMaterial != null && sensorData.blurBodyMaterial)
 				{
 					ApplyErodeDilate(sensorData.alphaBodyTexture, sensorData.alphaBodyTexture, sensorData.erodeBodyMaterial, 
-					                 sensorData.dilateBodyMaterial, 3, 3);
-					ApplyImageBlur(sensorData.alphaBodyTexture, sensorData.alphaBodyTexture, sensorData.blurBodyMaterial);
+ 					                 sensorData.dilateBodyMaterial, sensorData.erodeIterations, sensorData.dilateIterations);
+					ApplyImageBlur(sensorData.alphaBodyTexture, sensorData.alphaBodyTexture, sensorData.blurBodyMaterial, 1, 0.6f);
 				}
 			}
 
@@ -2302,10 +2334,10 @@ public class KinectInterop
 			if(sensorData.erodeBodyMaterial != null && sensorData.dilateBodyMaterial != null && sensorData.blurBodyMaterial)
 			{
 				ApplyErodeDilate(sensorData.bodyIndexTexture, sensorData.alphaBodyTexture, sensorData.erodeBodyMaterial, 
-				                 sensorData.dilateBodyMaterial, 3, 3);
-				ApplyImageBlur(sensorData.alphaBodyTexture, sensorData.alphaBodyTexture, sensorData.blurBodyMaterial);
+				                 sensorData.dilateBodyMaterial, sensorData.erodeIterations, sensorData.dilateIterations);
+				ApplyImageBlur(sensorData.alphaBodyTexture, sensorData.alphaBodyTexture, sensorData.blurBodyMaterial, 0, 0.6f);
 			}
-			
+
 			// blit the lo-res texture
 			if(!bAlphaTexOnly)
 			{
@@ -2361,12 +2393,58 @@ public class KinectInterop
 		RenderTexture.ReleaseTemporary(tempTexture[1]);
 	}
 
-	private static void ApplyImageBlur(RenderTexture source, RenderTexture destination, Material blurMaterial)
+	private static void ApplyImageBlur(RenderTexture source, RenderTexture destination, Material blurMaterial, int blurIterations, float blurSpread)
 	{
 		if(!source || !destination || !blurMaterial)
 			return;
 
-		Graphics.Blit(source, destination, blurMaterial);
+//		Graphics.Blit(source, destination, blurMaterial);
+//		return;
+
+		int rtW = source.width / 4;
+		int rtH = source.height / 4;
+		RenderTexture buffer = RenderTexture.GetTemporary(rtW, rtH, 0);
+
+		// Copy source to the 4x4 smaller texture.
+		Downsample4x(source, buffer, blurMaterial);
+
+		// Blur the small texture
+		for(int i = 0; i < blurIterations; i++)
+		{
+			RenderTexture buffer2 = RenderTexture.GetTemporary(rtW, rtH, 0);
+			FourTapCone(buffer, buffer2, blurMaterial, i, blurSpread);
+			RenderTexture.ReleaseTemporary(buffer);
+			buffer = buffer2;
+		}
+
+		Graphics.Blit(buffer, destination);
+		RenderTexture.ReleaseTemporary(buffer);
+	}
+
+	// downsamples the texture to a quarter resolution.
+	private static void Downsample4x(RenderTexture source, RenderTexture dest, Material material)
+	{
+		float off = 1.0f;
+
+		Graphics.BlitMultiTap (source, dest, material,
+			new Vector2(-off, -off),
+			new Vector2(-off,  off),
+			new Vector2( off,  off),
+			new Vector2( off, -off)
+		);
+	}
+
+	// performs one blur iteration.
+	private static void FourTapCone (RenderTexture source, RenderTexture dest, Material material, int iteration, float blurSpread)
+	{
+		float off = 0.5f + iteration * blurSpread;
+
+		Graphics.BlitMultiTap (source, dest, material,
+			new Vector2(-off, -off),
+			new Vector2(-off,  off),
+			new Vector2( off,  off),
+			new Vector2( off, -off)
+		);
 	}
 
 	// returns the foregound frame rectangle, as to the required resolution
@@ -2628,5 +2706,36 @@ public class KinectInterop
 			Debug.Log("Could not delete file: " + sFullLibPath);
 		}
 	}
-	
+
+	// universal windows platform specific functions
+
+#if UNITY_WSA
+	[DllImport("kernelbase")]
+	public static extern void Sleep(int dwMilliseconds);
+#else
+	[DllImport("kernel32")]
+	public static extern void Sleep(int dwMilliseconds);
+#endif
+
+
+	public static bool IsFileExists(string sFilePath, long iFileSize)
+	{
+#if UNITY_WSA
+		return File.Exists(sFilePath);
+#else
+		System.IO.FileInfo targetFile = new System.IO.FileInfo(sFilePath);
+		return targetFile.Exists && targetFile.Length == iFileSize;
+#endif
+	}
+
+
+	public static string GetEnvironmentVariable(string sEnvVar)
+	{
+#if !UNITY_WSA
+		return System.Environment.GetEnvironmentVariable(sEnvVar);
+#else
+		return String.Empty;
+#endif
+	}
+
 }

@@ -72,7 +72,7 @@ public class JointOverlayer : MonoBehaviour
 					{
 //						if(debugText)
 //						{
-//							debugText.GetComponent<GUIText>().text = string.Format("{0} - {1}", trackedJoint, posJoint);
+//							debugText.text = string.Format("{0} - {1}", trackedJoint, posJoint);
 //						}
 
 						if(overlayObject)

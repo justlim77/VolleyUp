@@ -24,7 +24,7 @@ public class LoadLevelWhenNoUser : MonoBehaviour
 
 			if(manager == null || !manager.IsInitialized())
 			{
-				debugText.GetComponent<GUIText>().text = "KinectManager is not initialized!";
+				debugText.text = "KinectManager is not initialized!";
 				levelLoaded = true;
 			}
 		}

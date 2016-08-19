@@ -189,7 +189,7 @@ public class KinectManager : MonoBehaviour
 	//protected BoneOrientationsFilter boneOrientationFilter = null;
 
 	// background kinect thread
-	protected System.Threading.Thread kinectReaderThread = null;
+	//protected System.Threading.Thread kinectReaderThread = null;
 	protected bool kinectReaderRunning = false;
 
 
@@ -1926,6 +1926,9 @@ public class KinectManager : MonoBehaviour
 
 	void Awake()
 	{
+		// set the singleton instance
+		instance = this;
+
 		try
 		{
 			bool bOnceRestarted = false;
@@ -2039,9 +2042,6 @@ public class KinectManager : MonoBehaviour
 			return;
 		}
 
-		// set the singleton instance
-		instance = this;
-		
 		// init skeleton structures
 		bodyFrame = new KinectInterop.BodyFrameData(sensorData.bodyCount, KinectInterop.Constants.MaxJointCount); // sensorData.jointCount
 		bodyFrame.bTurnAnalisys = allowTurnArounds;
@@ -2110,7 +2110,8 @@ public class KinectManager : MonoBehaviour
 
 			foreach(MonoBehaviour monoScript in monoScripts)
 			{
-				if(typeof(AvatarController).IsAssignableFrom(monoScript.GetType()) && monoScript.enabled)
+//				if(typeof(AvatarController).IsAssignableFrom(monoScript.GetType()) && monoScript.enabled)
+				if((monoScript is AvatarController) && monoScript.enabled)
 				{
 					AvatarController avatar = (AvatarController)monoScript;
 					avatarControllers.Add(avatar);
@@ -2125,7 +2126,8 @@ public class KinectManager : MonoBehaviour
 			
 			foreach(MonoBehaviour monoScript in monoScripts)
 			{
-				if(typeof(KinectGestures).IsAssignableFrom(monoScript.GetType()) && monoScript.enabled)
+//				if(typeof(KinectGestures).IsAssignableFrom(monoScript.GetType()) && monoScript.enabled)
+				if((monoScript is KinectGestures) && monoScript.enabled)
 				{
 					gestureManager = (KinectGestures)monoScript;
 					break;
@@ -2141,8 +2143,9 @@ public class KinectManager : MonoBehaviour
 			
 			foreach(MonoBehaviour monoScript in monoScripts)
 			{
-				if(typeof(KinectGestures.GestureListenerInterface).IsAssignableFrom(monoScript.GetType()) &&
-				   monoScript.enabled)
+//				if(typeof(KinectGestures.GestureListenerInterface).IsAssignableFrom(monoScript.GetType()) &&
+//				   monoScript.enabled)
+				if((monoScript is KinectGestures.GestureListenerInterface) && monoScript.enabled)
 				{
 					//KinectGestures.GestureListenerInterface gl = (KinectGestures.GestureListenerInterface)monoScript;
 					gestureListeners.Add(monoScript);
@@ -2186,15 +2189,14 @@ public class KinectManager : MonoBehaviour
 		{
 			// stop the background thread
 			kinectReaderRunning = false;
-			kinectReaderThread = null;
+			//kinectReaderThread = null;
 
 			// close the sensor
 			KinectInterop.CloseSensor(sensorData);
-			
 //			KinectInterop.ShutdownKinectSensor();
-
-			instance = null;
 		}
+
+		instance = null;
 	}
 
 	void OnGUI()
@@ -2350,7 +2352,7 @@ public class KinectManager : MonoBehaviour
 		while(kinectReaderRunning)
 		{
 			UpdateKinectStreams();
-			System.Threading.Thread.Sleep(10);
+			KinectInterop.Sleep(10);
 		}
 	}
 	
@@ -2912,7 +2914,7 @@ public class KinectManager : MonoBehaviour
 				
 //				if(allowTurnArounds && calibrationText)
 //				{
-//					calibrationText.GetComponent<GUIText>().text = string.Format("{0} - BodyAngle: {1:000}", 
+//					calibrationText.text = string.Format("{0} - BodyAngle: {1:000}", 
 //					    (!bodyData.isTurnedAround ? "FACE" : "BACK"), bodyData.bodyTurnAngle);
 //				}
 
@@ -3203,44 +3205,43 @@ public class KinectManager : MonoBehaviour
 
 		return uidIndex;
 	}
-
-    //	// Returns empty user slot for the given user Id (sorts user indices left to right)
-    //	protected virtual int GetEmptyUserSlot(Int64 userId, int bodyIndex)
-    //	{
-    //		int uidIndex = -1;
-    //		float userX = bodyFrame.bodyData[bodyIndex].position.x;
-    //		
-    //		for(int i = 0; i < aUserIndexIds.Length; i++)
-    //		{
-    //			if(aUserIndexIds[i] == 0)
-    //			{
-    //				// free user slot
-    //				uidIndex = i;
-    //				break;
-    //			}
-    //			else
-    //			{
-    //				Int64 uidUserId = aUserIndexIds[i];
-    //				float uidUserX = GetUserPosition(uidUserId).x;
-    //
-    //				if(userX <= uidUserX)
-    //				{
-    //					// current user is left to the compared one
-    //					for(int u = i; u < (aUserIndexIds.Length - 1); u++)
-    //					{
-    //						aUserIndexIds[u + 1] = aUserIndexIds[u];
-    //					}
-    //
-    //					uidIndex = i;
-    //					break;
-    //				}
-    //			}
-    //		}
-    //		
-    //		return uidIndex;
-    //	}
-
-    public static Int64 NewTrackedID = 0;
+	
+//	// Returns empty user slot for the given user Id (sorts user indices left to right)
+//	protected virtual int GetEmptyUserSlot(Int64 userId, int bodyIndex)
+//	{
+//		int uidIndex = -1;
+//		float userX = bodyFrame.bodyData[bodyIndex].position.x;
+//		
+//		for(int i = 0; i < aUserIndexIds.Length; i++)
+//		{
+//			if(aUserIndexIds[i] == 0)
+//			{
+//				// free user slot
+//				uidIndex = i;
+//				break;
+//			}
+//			else
+//			{
+//				Int64 uidUserId = aUserIndexIds[i];
+//				float uidUserX = GetUserPosition(uidUserId).x;
+//
+//				if(userX <= uidUserX)
+//				{
+//					// current user is left to the compared one
+//					for(int u = i; u < (aUserIndexIds.Length - 1); u++)
+//					{
+//						aUserIndexIds[u + 1] = aUserIndexIds[u];
+//					}
+//
+//					uidIndex = i;
+//					break;
+//				}
+//			}
+//		}
+//		
+//		return uidIndex;
+//	}
+	
 	// Adds UserId to the list of users
     protected virtual void CalibrateUser(Int64 userId, int bodyIndex)
     {
@@ -3263,8 +3264,6 @@ public class KinectManager : MonoBehaviour
 				
 				Debug.Log("Adding user " + uidIndex + ", ID: " + userId + ", Body: " + bodyIndex);
 
-                //avatarControllers[0].playerId = userId; // TODO: Temp implementation
-
 				dictUserIdToIndex[userId] = bodyIndex;
 				dictUserIdToTime[userId] = Time.time;
 				alUserIds.Add(userId);
@@ -3273,9 +3272,8 @@ public class KinectManager : MonoBehaviour
 				if(liPrimaryUserId == 0 && aUserIndexIds.Length > 0)
 				{
 					liPrimaryUserId = aUserIndexIds[0];  // userId
-                    //avatarControllers[0].playerId = liPrimaryUserId; // TODO: Temp implementation
-
-                    if (liPrimaryUserId != 0)
+					
+					if(liPrimaryUserId != 0)
 					{
 						if(calibrationText != null && calibrationText.text != "")
 						{
@@ -3296,20 +3294,9 @@ public class KinectManager : MonoBehaviour
 						avatar.SuccessfulCalibration(userId);
 					}
 				}
-
-                // TODO: Avatar round-robin
-                AvatarController avatarMain = avatarControllers[0];
-                if (avatarMain && avatarMain.playerIndex == 0)
-                {
-                    avatarMain.playerId = liPrimaryUserId;
-                    avatarMain.SuccessfulCalibration(liPrimaryUserId);
-                }
-
-                Debug.Log("[CalibrateUser] Main Avatar user ID: " + avatarControllers[0].playerId);
-                Debug.Log("[CalibrateUser] Primary user ID: " + liPrimaryUserId);
-
-                // add the gestures to be detected by all users, if any
-                foreach (KinectGestures.Gestures gesture in playerCommonGestures)
+				
+				// add the gestures to be detected by all users, if any
+				foreach(KinectGestures.Gestures gesture in playerCommonGestures)
 				{
 					DetectGesture(userId, gesture);
 				}
@@ -3403,29 +3390,18 @@ public class KinectManager : MonoBehaviour
 				liPrimaryUserId = 0;
 			}
 		}
+		
+//		for(int i = 0; i < avatarControllers.Count; i++)
+//		{
+//			AvatarController avatar = avatarControllers[i];
+//			
+//			if(avatar && avatar.playerIndex >= uidIndex && avatar.playerIndex < alUserIds.Count)
+//			{
+//				avatar.SuccessfulCalibration(alUserIds[avatar.playerIndex]);
+//			}
+//		}
 
-        //// TODO: Avatar round-robin
-        //AvatarController avatarMain = avatarControllers[0];
-        //if (avatarMain && avatarMain.playerIndex == 0)
-        //{
-        //    Debug.Log("[RemoveUser] Avatar user ID: " + avatarMain.playerId);
-        //    avatarMain.playerId = liPrimaryUserId;
-        //}
-
-        Debug.Log("[RemoveUser] Main Avatar user ID: " + avatarControllers[0].playerId);
-        Debug.Log("[RemoveUser] Primary user ID: " + liPrimaryUserId);
-
-        //		for(int i = 0; i < avatarControllers.Count; i++)
-        //		{
-        //			AvatarController avatar = avatarControllers[i];
-        //			
-        //			if(avatar && avatar.playerIndex >= uidIndex && avatar.playerIndex < alUserIds.Count)
-        //			{
-        //				avatar.SuccessfulCalibration(alUserIds[avatar.playerIndex]);
-        //			}
-        //		}
-
-        if (alUserIds.Count == 0)
+		if(alUserIds.Count == 0)
 		{
 			Debug.Log("Waiting for users.");
 			
@@ -3925,7 +3901,7 @@ public class KinectManager : MonoBehaviour
 					                                playerJointsTracked[joint] ? playerJointsPos[joint].ToString() : "");
 				}
 
-				gesturesDebugText.GetComponent<GUIText>().text = sDebugGestures;
+				gesturesDebugText.text = sDebugGestures;
 			}
 		}
 	}
@@ -4035,8 +4011,9 @@ public class KinectManager : MonoBehaviour
 
 		foreach(MonoBehaviour monoScript in monoScripts)
 		{
-			if(typeof(KinectGestures.GestureListenerInterface).IsAssignableFrom(monoScript.GetType()) &&
-				monoScript.enabled)
+//			if(typeof(KinectGestures.GestureListenerInterface).IsAssignableFrom(monoScript.GetType()) &&
+//				monoScript.enabled)
+			if((monoScript is KinectGestures.GestureListenerInterface) && monoScript.enabled)
 			{
 				//KinectGestures.GestureListenerInterface gl = (KinectGestures.GestureListenerInterface)monoScript;
 				gestureListeners.Add(monoScript);
@@ -4047,8 +4024,9 @@ public class KinectManager : MonoBehaviour
 		gestureManager = null;
 		foreach(MonoBehaviour monoScript in monoScripts)
 		{
-			if(typeof(KinectGestures).IsAssignableFrom(monoScript.GetType()) && 
-				monoScript.enabled)
+//			if(typeof(KinectGestures).IsAssignableFrom(monoScript.GetType()) && 
+//				monoScript.enabled)
+			if((monoScript is KinectGestures) && monoScript.enabled)
 			{
 				gestureManager = (KinectGestures)monoScript;
 				break;
@@ -4071,8 +4049,9 @@ public class KinectManager : MonoBehaviour
 		// locate the available avatar controllers
 		foreach(MonoBehaviour monoScript in monoScripts)
 		{
-			if(typeof(AvatarController).IsAssignableFrom(monoScript.GetType()) &&
-				monoScript.enabled)
+//			if(typeof(AvatarController).IsAssignableFrom(monoScript.GetType()) &&
+//				monoScript.enabled)
+			if((monoScript is AvatarController) && monoScript.enabled)
 			{
 				AvatarController avatar = (AvatarController)monoScript;
 				avatarControllers.Add(avatar);

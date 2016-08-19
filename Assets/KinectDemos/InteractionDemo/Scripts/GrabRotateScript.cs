@@ -130,7 +130,7 @@ public class GrabRotateScript : MonoBehaviour
 				}
 			}
 			
-			infoGuiText.GetComponent<GUIText>().text = sInfo;
+			infoGuiText.text = sInfo;
 		}
 	}
 

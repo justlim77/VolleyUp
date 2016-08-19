@@ -37,20 +37,20 @@ namespace Assets.HolographicDisplay
 
 		private KinectManager kinectManager;
 		private Vector3 screenCenterPos;
+
 		private Vector3 headPosition;
+		private bool headPosValid = false;
 
 
 		void Start()
 		{
+			kinectManager = KinectManager.Instance;
 			screenCenterPos = new Vector3 (0f, ScreenCenterY, 0f);
 		}
 
 		void Update()
 		{
-			if (!kinectManager) 
-			{
-				kinectManager = KinectManager.Instance;
-			}
+			headPosValid = false;
 
 			if (kinectManager && kinectManager.IsInitialized()) 
 			{
@@ -60,6 +60,7 @@ namespace Assets.HolographicDisplay
 				{
 					Vector3 jointHeadPos = kinectManager.GetJointPosition (userId, (int)KinectInterop.JointType.Head);
 					headPosition = jointHeadPos - screenCenterPos;
+					headPosValid = true;
 
 					if (statusText) 
 					{
@@ -77,19 +78,22 @@ namespace Assets.HolographicDisplay
         /// </summary>
         void LateUpdate()
         {
-            Camera cam = GetComponent<Camera>();
+			if (headPosValid) 
+			{
+				Camera cam = GetComponent<Camera>();
 
-            left = cam.nearClipPlane * (-(ScreenWidth / 2) - headPosition.x) / headPosition.z;
-            right = cam.nearClipPlane * (ScreenWidth / 2 - headPosition.x) / headPosition.z;
+				left = cam.nearClipPlane * (-(ScreenWidth / 2) - headPosition.x) / headPosition.z;
+				right = cam.nearClipPlane * (ScreenWidth / 2 - headPosition.x) / headPosition.z;
 
-            bottom = cam.nearClipPlane * (-(ScreenHeight / 2) - headPosition.y) / headPosition.z;
-            top = cam.nearClipPlane * (ScreenHeight / 2 - headPosition.y) / headPosition.z;
+				bottom = cam.nearClipPlane * (-(ScreenHeight / 2) - headPosition.y) / headPosition.z;
+				top = cam.nearClipPlane * (ScreenHeight / 2 - headPosition.y) / headPosition.z;
 
-            cam.transform.position = new Vector3(headPosition.x, headPosition.y, -headPosition.z);
-            cam.transform.LookAt(new Vector3(headPosition.x, headPosition.y, 0));
+				cam.transform.position = new Vector3(headPosition.x, headPosition.y, -headPosition.z);
+				cam.transform.LookAt(new Vector3(headPosition.x, headPosition.y, 0));
 
-            Matrix4x4 m = PerspectiveOffCenter(left, right, bottom, top, cam.nearClipPlane, cam.farClipPlane);
-            cam.projectionMatrix = m;
+				Matrix4x4 m = PerspectiveOffCenter(left, right, bottom, top, cam.nearClipPlane, cam.farClipPlane);
+				cam.projectionMatrix = m;
+			}
         }
 
         /// <summary>

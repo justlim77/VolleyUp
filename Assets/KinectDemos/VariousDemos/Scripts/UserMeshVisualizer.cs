@@ -91,7 +91,8 @@ public class UserMeshVisualizer : MonoBehaviour
 		// get user texture
 		if(GetComponent<Renderer>().material.mainTexture == null)
 		{
-			GetComponent<Renderer>().material.mainTexture = manager.GetUsersLblTex();
+			BackgroundRemovalManager backManager = BackgroundRemovalManager.Instance;
+			GetComponent<Renderer>().material.mainTexture = backManager ? (Texture)sensorData.depth2ColorTexture : (Texture)manager.GetUsersLblTex();
 		}
 
 		if(playerIndex >= 0)

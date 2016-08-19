@@ -44,8 +44,17 @@ public class KinectDataServer : MonoBehaviour
 
 	private byte[] broadcastOutBuffer = null;
 
+	private const int maxSendSize = 1400;
+
+//	private string sendFvMsg = string.Empty;
+//	private int sendFvNextOfs = 0;
+//
+//	private string sendFtMsg = string.Empty;
+//	private int sendFtNextOfs = 0;
+
 	private KinectManager manager;
-	private FacetrackingManager faceManager;
+//	private FacetrackingManager faceManager;
+	private LZ4Sharp.ILZ4Compressor compressor;
 	private long liRelTime = 0;
 	private float fCurrentTime = 0f;
 
@@ -99,6 +108,7 @@ public class KinectDataServer : MonoBehaviour
 			// set broadcast data
 			string sBroadcastData = string.Empty;
 
+#if !UNITY_WSA
 			try 
 			{
 				string strHostName = System.Net.Dns.GetHostName();
@@ -133,6 +143,9 @@ public class KinectDataServer : MonoBehaviour
 					serverStatusText.text = "Use 'ipconfig' to see the host IP; Port: " + listenOnPort;
 				}
 			}
+#else
+			sBroadcastData = "KinectDataServer:" + "127.0.0.1" + ":" + listenOnPort;
+#endif
 
 			// start broadcast discovery
 			if(broadcastPort > 0)
@@ -191,6 +204,9 @@ public class KinectDataServer : MonoBehaviour
 				backgroundImage.transform.localScale = localScale;
 			}
 		}
+
+		// create lz4 compressor
+		compressor = LZ4Sharp.LZ4CompressorFactory.CreateNew();
 	}
 
 	void OnDestroy()
@@ -231,10 +247,10 @@ public class KinectDataServer : MonoBehaviour
 			backgroundImage.texture = manager ? manager.GetUsersLblTex() : null;
 		}
 
-		if(faceManager == null)
-		{
-			faceManager = FacetrackingManager.Instance;
-		}
+//		if(faceManager == null)
+//		{
+//			faceManager = FacetrackingManager.Instance;
+//		}
 
 		try 
 		{
@@ -262,6 +278,13 @@ public class KinectDataServer : MonoBehaviour
 
 					//Debug.Log(connectionId + "-conn: " + conn.reqDataType);
 				}
+
+//				// reset chunked face messages
+//				sendFvMsg = string.Empty;
+//				sendFvNextOfs = 0;
+//
+//				sendFtMsg = string.Empty;
+//				sendFtNextOfs = 0;
 				break;
 			case NetworkEventType.DataEvent:       //3
 				if(recHostId == serverHostId && recChannelId == serverChannelId &&
@@ -279,7 +302,7 @@ public class KinectDataServer : MonoBehaviour
 						conn.reqDataType = sRecvMessage;
 						dictConnection[connectionId] = conn;
 
-						//Debug.Log(connectionId + "-keep: " + conn.reqDataType);
+						//Debug.Log(connectionId + "-recv: " + conn.reqDataType);
 					}
 				}
 				break;
@@ -340,18 +363,28 @@ public class KinectDataServer : MonoBehaviour
 
 				byte[] btSendMessage = System.Text.Encoding.UTF8.GetBytes(sbSendMessage.ToString());
 
-				// check face-tracking requests
-				bool bFaceParams = false, bFaceVertices = false, bFaceTriangles = false;
-				if(faceManager && faceManager.IsFaceTrackingInitialized())
-					CheckFacetrackRequests(out bFaceParams, out bFaceVertices, out bFaceTriangles);
-
-				byte[] btFaceParams = null; //, btFaceVertices = null, btFaceTriangles = null;
-				if(bFaceParams)
-				{
-					string sFaceParams = faceManager.GetFaceParamsAsCsv();
-					if(!string.IsNullOrEmpty(sFaceParams))
-						btFaceParams = System.Text.Encoding.UTF8.GetBytes(sFaceParams);
-				}
+//				// check face-tracking requests
+//				bool bFaceParams = false, bFaceVertices = false, bFaceUvs = false, bFaceTriangles = false;
+//				if(faceManager && faceManager.IsFaceTrackingInitialized())
+//					CheckFacetrackRequests(out bFaceParams, out bFaceVertices, out bFaceUvs, out bFaceTriangles);
+//
+//				byte[] btFaceParams = null;
+//				if(bFaceParams)
+//				{
+//					string sFaceParams = faceManager.GetFaceParamsAsCsv();
+//					if(!string.IsNullOrEmpty(sFaceParams))
+//						btFaceParams = System.Text.Encoding.UTF8.GetBytes(sFaceParams);
+//				}
+//
+//				// next chunk of data for face vertices
+//				byte[] btFaceVertices = null;
+//				string sFvMsgHead = string.Empty;
+//				GetNextFaceVertsChunk(bFaceVertices, bFaceUvs, ref btFaceVertices, out sFvMsgHead);
+//
+//				// next chunk of data for face triangles
+//				byte[] btFaceTriangles = null;
+//				string sFtMsgHead = string.Empty;
+//				GetNextFaceTrisChunk(bFaceTriangles, ref btFaceTriangles, out sFtMsgHead);
 
 				foreach(int connId in alConnectionId)
 				{
@@ -364,6 +397,8 @@ public class KinectDataServer : MonoBehaviour
 
 						if(conn.reqDataType != null && conn.reqDataType.Contains("kb,"))
 						{
+							//Debug.Log(conn.connectionId + "-sendkb: " + conn.reqDataType);
+
 							error = 0;
 							if(!NetworkTransport.Send(conn.hostId, conn.connectionId, conn.channelId, btSendMessage, btSendMessage.Length, out error))
 							{
@@ -377,21 +412,59 @@ public class KinectDataServer : MonoBehaviour
 							}
 						}
 
-						if(bFaceParams && btFaceParams != null &&
-							conn.reqDataType != null && conn.reqDataType.Contains("fp,"))
-						{
-							error = 0;
-							if(!NetworkTransport.Send(conn.hostId, conn.connectionId, conn.channelId, btFaceParams, btFaceParams.Length, out error))
-							{
-								string sMessage = "Error sending face params via conn " + conn.connectionId + ": " + (NetworkError)error;
-								Debug.LogError(sMessage);
-
-								if(serverStatusText)
-								{
-									serverStatusText.text = sMessage;
-								}
-							}
-						}
+//						if(bFaceParams && btFaceParams != null &&
+//							conn.reqDataType != null && conn.reqDataType.Contains("fp,"))
+//						{
+//							//Debug.Log(conn.connectionId + "-sendfp: " + conn.reqDataType);
+//
+//							error = 0;
+//							if(!NetworkTransport.Send(conn.hostId, conn.connectionId, conn.channelId, btFaceParams, btFaceParams.Length, out error))
+//							{
+//								string sMessage = "Error sending face params via conn " + conn.connectionId + ": " + (NetworkError)error;
+//								Debug.LogError(sMessage);
+//
+//								if(serverStatusText)
+//								{
+//									serverStatusText.text = sMessage;
+//								}
+//							}
+//						}
+//
+//						if(bFaceVertices && btFaceVertices != null &&
+//							conn.reqDataType != null && conn.reqDataType.Contains("fv,"))
+//						{
+//							//Debug.Log(conn.connectionId + "-sendfv: " + conn.reqDataType + " - " + sFvMsgHead);
+//
+//							error = 0;
+//							if(!NetworkTransport.Send(conn.hostId, conn.connectionId, conn.channelId, btFaceVertices, btFaceVertices.Length, out error))
+//							{
+//								string sMessage = "Error sending face verts via conn " + conn.connectionId + ": " + (NetworkError)error;
+//								Debug.LogError(sMessage);
+//
+//								if(serverStatusText)
+//								{
+//									serverStatusText.text = sMessage;
+//								}
+//							}
+//						}
+//
+//						if(bFaceTriangles && btFaceTriangles != null &&
+//							conn.reqDataType != null && conn.reqDataType.Contains("ft,"))
+//						{
+//							//Debug.Log(conn.connectionId + "-sendft: " + conn.reqDataType + " - " + sFtMsgHead);
+//
+//							error = 0;
+//							if(!NetworkTransport.Send(conn.hostId, conn.connectionId, conn.channelId, btFaceTriangles, btFaceTriangles.Length, out error))
+//							{
+//								string sMessage = "Error sending face tris via conn " + conn.connectionId + ": " + (NetworkError)error;
+//								Debug.LogError(sMessage);
+//
+//								if(serverStatusText)
+//								{
+//									serverStatusText.text = sMessage;
+//								}
+//							}
+//						}
 
 					}
 				}
@@ -410,25 +483,115 @@ public class KinectDataServer : MonoBehaviour
 	}
 
 
-	// checks whether facetracking data was requested by any connection
-	private void CheckFacetrackRequests(out bool bFaceParams, out bool bFaceVertices, out bool bFaceTriangles)
-	{
-		bFaceParams = bFaceVertices = bFaceTriangles = false;
-
-		foreach (int connId in alConnectionId) 
-		{
-			HostConnection conn = dictConnection [connId];
-
-			if (conn.keepAlive && conn.reqDataType != null) 
-			{
-				if (conn.reqDataType.Contains ("fp,"))
-					bFaceParams = true;
-				if (conn.reqDataType.Contains ("fv,"))
-					bFaceVertices = true;
-				if (conn.reqDataType.Contains ("ft,"))
-					bFaceTriangles = true;
-			}
-		}
-	}
+//	// checks whether facetracking data was requested by any connection
+//	private void CheckFacetrackRequests(out bool bFaceParams, out bool bFaceVertices, out bool bFaceUvs, out bool bFaceTriangles)
+//	{
+//		bFaceParams = bFaceVertices = bFaceUvs = bFaceTriangles = false;
+//
+//		foreach (int connId in alConnectionId) 
+//		{
+//			HostConnection conn = dictConnection [connId];
+//
+//			if (conn.keepAlive && conn.reqDataType != null) 
+//			{
+//				if (conn.reqDataType.Contains ("fp,"))
+//					bFaceParams = true;
+//				if (conn.reqDataType.Contains ("fv,"))
+//					bFaceVertices = true;
+//				if (conn.reqDataType.Contains ("fu,"))
+//					bFaceUvs = true;
+//				if (conn.reqDataType.Contains ("ft,"))
+//					bFaceTriangles = true;
+//			}
+//		}
+//	}
+//
+//	// returns next chunk of face-vertices data
+//	private bool GetNextFaceVertsChunk(bool bFaceVertices, bool bFaceUvs, ref byte[] btFaceVertices, out string chunkHead)
+//	{
+//		btFaceVertices = null;
+//		chunkHead = string.Empty;
+//
+//		if (bFaceVertices) 
+//		{
+//			chunkHead = "pv2";  // end
+//
+//			if (sendFvNextOfs >= sendFvMsg.Length) 
+//			{
+//				sendFvMsg = faceManager.GetFaceVerticesAsCsv ();
+//				if (bFaceUvs)
+//					sendFvMsg += "|" + faceManager.GetFaceUvsAsCsv ();
+//
+//				byte[] uncompressed = System.Text.Encoding.UTF8.GetBytes(sendFvMsg);
+//				byte[] compressed = compressor.Compress(uncompressed);
+//				sendFvMsg = System.Convert.ToBase64String(compressed);
+//
+//				sendFvNextOfs = 0;
+//			}
+//
+//			if (sendFvNextOfs < sendFvMsg.Length) 
+//			{
+//				int chunkLen = sendFvMsg.Length - sendFvNextOfs;
+//
+//				if (chunkLen > maxSendSize) 
+//				{
+//					chunkLen = maxSendSize;
+//					chunkHead = sendFvNextOfs == 0 ? "pv0" : "pv1";  // start or middle
+//				} 
+//				else if (sendFvNextOfs == 0) 
+//				{
+//					chunkHead = "pv3";  // all
+//				}
+//
+//				btFaceVertices = System.Text.Encoding.UTF8.GetBytes (chunkHead + sendFvMsg.Substring (sendFvNextOfs, chunkLen));
+//				sendFvNextOfs += chunkLen;
+//			}
+//		} 
+//
+//		return (btFaceVertices != null);
+//	}
+//
+//	// returns next chunk of face-triangles data
+//	private bool GetNextFaceTrisChunk(bool bFaceTriangles, ref byte[] btFaceTriangles, out string chunkHead)
+//	{
+//		btFaceTriangles = null;
+//		chunkHead = string.Empty;
+//
+//		if (bFaceTriangles) 
+//		{
+//			chunkHead = "pt2";  // end
+//
+//			if (sendFtNextOfs >= sendFtMsg.Length) 
+//			{
+//				sendFtMsg = faceManager.GetFaceTrianglesAsCsv ();
+//
+//				byte[] uncompressed = System.Text.Encoding.UTF8.GetBytes(sendFtMsg);
+//				byte[] compressed = compressor.Compress(uncompressed);
+//				sendFtMsg = System.Convert.ToBase64String(compressed);
+//
+//				sendFtNextOfs = 0;
+//			}
+//
+//			if (sendFtNextOfs < sendFtMsg.Length) 
+//			{
+//				int chunkLen = sendFtMsg.Length - sendFtNextOfs;
+//
+//				if (chunkLen > maxSendSize) 
+//				{
+//					chunkLen = maxSendSize;
+//					chunkHead = sendFtNextOfs == 0 ? "pt0" : "pt1";  // start or middle
+//				}
+//				else if (sendFvNextOfs == 0) 
+//				{
+//					chunkHead = "pt3";  // all
+//				}
+//
+//				btFaceTriangles = System.Text.Encoding.UTF8.GetBytes (chunkHead + sendFtMsg.Substring (sendFtNextOfs, chunkLen));
+//				sendFtNextOfs += chunkLen;
+//			}
+//		} 
+//
+//		return (btFaceTriangles != null);
+//	}
 
 }

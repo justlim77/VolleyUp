@@ -3,8 +3,8 @@ using System.Collections;
 
 public class HeightEstimator : MonoBehaviour 
 {
-	[Tooltip("Index of the player, tracked by this component. 0 means the 1st player, 1 - the 2nd one, 2 - the 3rd one, etc.")]
-	public int playerIndex = 0;
+//	[Tooltip("Index of the player, tracked by this component. 0 means the 1st player, 1 - the 2nd one, 2 - the 3rd one, etc.")]
+//	public int playerIndex = 0;
 
 	[Tooltip("GUI-texture used to display the tracked users on scene background.")]
 	public GUITexture backgroundImage;
@@ -14,9 +14,6 @@ public class HeightEstimator : MonoBehaviour
 
 	[Tooltip("Estimated user-silhouette height, in meters.")]
 	public float userHeight;
-
-	[Tooltip("Estimated user-silhouette width, in meters.")]
-	public float userWidth;
 
 
 	// user bounds in meters
@@ -29,12 +26,14 @@ public class HeightEstimator : MonoBehaviour
 	private Vector2 posLeft, posTop, posRight, posBottom;
 
 	private KinectManager manager;
-	private long lastDepthFrameTime;
+	private BodySlicer bodySlicer;
+	private long lastFrameTime;
 
 
 	void Start () 
 	{
 		manager = KinectManager.Instance;
+		bodySlicer = BodySlicer.Instance;
 
 		if (manager && manager.IsInitialized ()) 
 		{
@@ -52,99 +51,63 @@ public class HeightEstimator : MonoBehaviour
 	// Update is called once per frame
 	void Update () 
 	{
-		if(backgroundImage && backgroundImage.texture == null)
+		if (manager && manager.IsInitialized ()) 
 		{
-			backgroundImage.texture = manager ? manager.GetUsersLblTex() : null;
-		}
+			Texture2D depthImage = manager ? manager.GetUsersLblTex() : null;
 
-		EstimateDepthRect();
-	}
-
-
-	private bool EstimateDepthRect()
-	{
-		if (!manager || !manager.IsInitialized ())
-			return false;
-		
-		KinectInterop.SensorData sensorData = manager.GetSensorData();
-
-		long userId = manager.GetUserIdByIndex (playerIndex);
-		byte bodyIndex = (byte)manager.GetBodyIndexByUserId (userId);
-
-		if (bodyIndex == 255)
-			return false;
-
-		if (sensorData.bodyIndexImage != null && sensorData.depthImage != null && 
-			sensorData.lastDepthFrameTime != lastDepthFrameTime) 
-		{
-			lastDepthFrameTime = sensorData.lastDepthFrameTime;
-
-			int depthLength = sensorData.depthImage.Length;
-			int depthWidth = sensorData.depthImageWidth;
-
-			posLeft.x = sensorData.depthImageWidth;
-			posTop.y = sensorData.depthImageHeight;
-			posRight.x = -1;
-			posBottom.y = -1;
-
-			for (int i = 0, x = 0, y = 0; i < depthLength; i++) 
+			if (bodySlicer && bodySlicer.getLastFrameTime() != lastFrameTime) 
 			{
-				if (sensorData.bodyIndexImage [i] == bodyIndex) 
+				lastFrameTime = bodySlicer.getLastFrameTime();
+				int sliceCount = bodySlicer.getBodySliceCount ();
+
+				if (depthImage) 
 				{
-					if (posLeft.x > x)
-						posLeft = new Vector2(x, y);
-					if (posTop.y > y)
-						posTop = new Vector2(x, y);
-					if (posRight.x < x)
-						posRight = new Vector2(x, y);
-					if (posBottom.y < y)
-						posBottom = new Vector2(x, y);
+					//depthImage = GameObject.Instantiate(depthImage) as Texture2D;
+
+					for (int i = 0; i < sliceCount; i++) 
+					{
+						BodySliceData bodySlice = bodySlicer.getBodySliceData((BodySlice)i);
+
+						if(depthImage && bodySlice.isSliceValid && 
+							bodySlice.startDepthPoint != Vector2.zero && bodySlice.endDepthPoint != Vector2.zero)
+						{
+							KinectInterop.DrawLine(depthImage, (int)bodySlice.startDepthPoint.x, (int)bodySlice.startDepthPoint.y, 
+								(int)bodySlice.endDepthPoint.x, (int)bodySlice.endDepthPoint.y, Color.red);
+						}
+					}
+
+					depthImage.Apply();
 				}
 
-				x++;
-				if (x >= depthWidth) 
+				if (statusText) 
 				{
-					x = 0;
-					y++;
+					if (bodySlicer.getCalibratedUserId () != 0) 
+					{
+						userHeight = bodySlicer.getUserHeight();
+						string sUserInfo = string.Format ("User {0} Height: {1:F2} m", bodySlicer.playerIndex, userHeight);
+
+						float w1 = bodySlicer.getSliceWidth (BodySlice.TORSO_1);
+						float w2 = bodySlicer.getSliceWidth (BodySlice.TORSO_2);
+						float w3 = bodySlicer.getSliceWidth (BodySlice.TORSO_3);
+						float w4 = bodySlicer.getSliceWidth (BodySlice.TORSO_4);
+
+						sUserInfo += string.Format ("\n\nTorso-4: {3:F2} m\nTorso-3: {2:F2} m\nTorso-2: {1:F2} m\nTorso-1: {0:F2} m", w1, w2, w3, w4);
+
+						statusText.text = sUserInfo;
+					} 
+					else 
+					{
+						statusText.text = string.Format ("User {0} not found", bodySlicer.playerIndex);;
+					}
 				}
 			}
-		}
 
-		bool bFound = (posRight.x >= 0) && (posBottom.y >= 0);
-
-		if (bFound) 
-		{
-			Vector3 vPosLeft = manager.MapDepthPointToSpaceCoords (posLeft, sensorData.depthImage [(int)posLeft.y * sensorData.depthImageWidth + (int)posLeft.x], true);
-			userLeft = vPosLeft.x;
-
-			Vector3 vPosTop = manager.MapDepthPointToSpaceCoords (posTop, sensorData.depthImage [(int)posTop.y * sensorData.depthImageWidth + (int)posTop.x], true);
-			userTop = vPosTop.y;
-
-			Vector3 vPosRight = manager.MapDepthPointToSpaceCoords (posRight, sensorData.depthImage [(int)posRight.y * sensorData.depthImageWidth + (int)posRight.x], true);
-			userRight = vPosRight.x;
-
-			Vector3 vPosBottom = manager.MapDepthPointToSpaceCoords (posBottom, sensorData.depthImage [(int)posBottom.y * sensorData.depthImageWidth + (int)posBottom.x], true);
-			userBottom = vPosBottom.y;
-
-			userHeight = userTop - userBottom;
-			userWidth = userRight - userLeft;
-
-			if (statusText) 
+			if (backgroundImage) 
 			{
-				string sUserInfo = string.Format ("User {0} height: {1:F1} m", playerIndex, userHeight);
-				statusText.text = sUserInfo;
-			}
-		} 
-		else 
-		{
-			if (statusText) 
-			{
-				string sUserInfo = string.Format ("User {0} not found", playerIndex);
-				statusText.text = sUserInfo;
+				backgroundImage.texture = depthImage;
 			}
 		}
-
-		return false;
 	}
+
 
 }

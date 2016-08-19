@@ -65,10 +65,15 @@ public class FacetrackingManager : MonoBehaviour
 	// whether the face model mesh was initialized
 	private bool bFaceModelMeshInited = false;
 
-	// Vertices and UV of the face model
+	// Vertices, UV and triangles of the face model
 	private Vector3[] avModelVertices = null;
 	private Vector2[] avModelUV = null;
 	private bool bGotModelVertices = false;
+	private bool bGotModelVerticesFromDC = false;
+
+	private int[] avModelTriangles = null;
+	private bool bGotModelTriangles = false;
+	private bool bGotModelTrianglesFromDC = false;
 
 	// Head position and rotation
 	private Vector3 headPos = Vector3.zero;
@@ -419,9 +424,9 @@ public class FacetrackingManager : MonoBehaviour
 	/// <returns>The count of face model triangles.</returns>
 	public int GetFaceModelTriangleCount()
 	{
-		if (sensorData != null && sensorData.sensorInterface != null) 
+		if (avModelTriangles != null) 
 		{
-			return sensorData.sensorInterface.GetFaceModelTrianglesCount();
+			return avModelTriangles.Length;
 		}
 
 		return 0;
@@ -434,20 +439,9 @@ public class FacetrackingManager : MonoBehaviour
 	/// <param name="bMirroredModel">If set to <c>true</c> gets mirorred model indices.</param>
 	public int[] GetFaceModelTriangleIndices(bool bMirroredModel)
 	{
-		if(sensorData != null && sensorData.sensorInterface != null)
+		if (avModelTriangles != null) 
 		{
-			int iNumTriangles = sensorData.sensorInterface.GetFaceModelTrianglesCount();
-
-			if(iNumTriangles > 0)
-			{
-				int[] avModelTriangles = new int[iNumTriangles];
-				bool bGotModelTriangles = sensorData.sensorInterface.GetFaceModelTriangles(bMirroredModel, ref avModelTriangles);
-
-				if(bGotModelTriangles)
-				{
-					return avModelTriangles;
-				}
-			}
+			return avModelTriangles;
 		}
 
 		return null;
@@ -459,6 +453,8 @@ public class FacetrackingManager : MonoBehaviour
 	
 	void Start() 
 	{
+		instance = this;
+
 		try 
 		{
 			// get sensor data
@@ -475,7 +471,7 @@ public class FacetrackingManager : MonoBehaviour
 
 			if(debugText != null)
 			{
-				debugText.GetComponent<GUIText>().text = "Please, wait...";
+				debugText.text = "Please, wait...";
 			}
 			
 			// ensure the needed dlls are in place and face tracking is available for this interface
@@ -500,27 +496,26 @@ public class FacetrackingManager : MonoBehaviour
 	            throw new Exception("Face tracking could not be initialized.");
 	        }
 			
-			instance = this;
 			isFacetrackingInitialized = true;
 
 			//DontDestroyOnLoad(gameObject);
 
 			if(debugText != null)
 			{
-				debugText.GetComponent<GUIText>().text = "Ready.";
+				debugText.text = "Ready.";
 			}
 		} 
 		catch(DllNotFoundException ex)
 		{
 			Debug.LogError(ex.ToString());
 			if(debugText != null)
-				debugText.GetComponent<GUIText>().text = "Please check the Kinect and FT-Library installations.";
+				debugText.text = "Please check the Kinect and FT-Library installations.";
 		}
 		catch (Exception ex) 
 		{
 			Debug.LogError(ex.ToString());
 			if(debugText != null)
-				debugText.GetComponent<GUIText>().text = ex.Message;
+				debugText.text = ex.Message;
 		}
 	}
 
@@ -558,6 +553,12 @@ public class FacetrackingManager : MonoBehaviour
 				// estimate the tracking state
 				isTrackingFace = sensorData.sensorInterface.IsFaceTracked(primaryUserID);
 
+				if(!isTrackingFace && (Time.realtimeSinceStartup - lastFaceTrackedTime) <= faceTrackingTolerance)
+				{
+					// allow tolerance in tracking
+					isTrackingFace = true;
+				}
+
 				// get the facetracking parameters
 				if(isTrackingFace)
 				{
@@ -592,11 +593,6 @@ public class FacetrackingManager : MonoBehaviour
 						UpdateFaceModelMesh(primaryUserID, faceModelMesh, headPos, headRot, faceRect, ref avModelVertices, ref avModelUV, ref bGotModelVertices);
 					}
 				}
-				else if((Time.realtimeSinceStartup - lastFaceTrackedTime) <= faceTrackingTolerance)
-				{
-					// allow tolerance in tracking
-					isTrackingFace = true;
-				}
 			}
 			
 			if(faceModelMesh != null && bFaceModelMeshInited)
@@ -614,11 +610,11 @@ public class FacetrackingManager : MonoBehaviour
 			{
 				if(isTrackingFace)
 				{
-					debugText.GetComponent<GUIText>().text = "Tracking - BodyID: " + primaryUserID;
+					debugText.text = "Tracking - BodyID: " + primaryUserID;
 				}
 				else
 				{
-					debugText.GetComponent<GUIText>().text = "Not tracking...";
+					debugText.text = "Not tracking...";
 				}
 			}
 		}
@@ -630,10 +626,10 @@ public class FacetrackingManager : MonoBehaviour
 //		if(faceModelMesh == null)
 //			return false;
 
-		if (avModelVertices == null) 
+		if (avModelVertices == null && !bGotModelVerticesFromDC) 
 		{
 			int iNumVertices = sensorData.sensorInterface.GetFaceModelVerticesCount(0);
-			if(iNumVertices < 0)
+			if(iNumVertices <= 0)
 				return false;
 
 			avModelVertices = new Vector3[iNumVertices];
@@ -648,24 +644,30 @@ public class FacetrackingManager : MonoBehaviour
 		// make vertices relative to the head pos
 		Matrix4x4 kinectToWorld = KinectManager.Instance ? KinectManager.Instance.GetKinectToWorldMatrix() : Matrix4x4.identity;
 		Vector3 headPosWorld = kinectToWorld.MultiplyPoint3x4(headPos);
-		
-		for(int i = 0; i < avModelVertices.Length; i++)
+
+		if (!bGotModelVerticesFromDC) 
 		{
-			avModelVertices[i] = kinectToWorld.MultiplyPoint3x4(avModelVertices[i]) - headPosWorld;
+			for(int i = 0; i < avModelVertices.Length; i++)
+			{
+				avModelVertices[i] = kinectToWorld.MultiplyPoint3x4(avModelVertices[i]) - headPosWorld;
+			}
 		}
 
-		if (faceModelMesh) 
+		if (avModelTriangles == null && !bGotModelTrianglesFromDC) 
 		{
 			int iNumTriangles = sensorData.sensorInterface.GetFaceModelTrianglesCount();
 			if(iNumTriangles <= 0)
 				return false;
 
-			int[] avModelTriangles = new int[iNumTriangles];
-			bool bGotModelTriangles = sensorData.sensorInterface.GetFaceModelTriangles(mirroredModelMesh, ref avModelTriangles);
+			avModelTriangles = new int[iNumTriangles];
+			bGotModelTriangles = sensorData.sensorInterface.GetFaceModelTriangles(mirroredModelMesh, ref avModelTriangles);
 
 			if(!bGotModelTriangles)
 				return false;
+		}
 
+		if (faceModelMesh) 
+		{
 			Mesh mesh = new Mesh();
 			mesh.name = "FaceMesh";
 			faceModelMesh.GetComponent<MeshFilter>().mesh = mesh;
@@ -688,95 +690,105 @@ public class FacetrackingManager : MonoBehaviour
 	public void UpdateFaceModelMesh(long userId, GameObject faceModelMesh, Vector3 headPos, Quaternion headRot, Rect faceRect,
 									ref Vector3[] avModelVertices, ref Vector2[] avModelUV, ref bool bGotModelVertices)
 	{
-		// init the vertices array if needed
-		if(avModelVertices == null)
+		if (!bGotModelVerticesFromDC) 
 		{
-			int iNumVertices = sensorData.sensorInterface.GetFaceModelVerticesCount(userId);
-			avModelVertices = new Vector3[iNumVertices];
+			// init the vertices array if needed
+			if(avModelVertices == null)
+			{
+				int iNumVertices = sensorData.sensorInterface.GetFaceModelVerticesCount(userId);
+				avModelVertices = new Vector3[iNumVertices];
+			}
+
+			// get face model vertices
+			bGotModelVertices = sensorData.sensorInterface.GetFaceModelVertices(userId, ref avModelVertices);
 		}
 
-		// get face model vertices
-		bGotModelVertices = sensorData.sensorInterface.GetFaceModelVertices(userId, ref avModelVertices);
-		
 		if(bGotModelVertices && faceModelMesh != null)
 		{
 			//Quaternion faceModelRot = faceModelMesh.transform.rotation;
 			//faceModelMesh.transform.rotation = Quaternion.identity;
 
 			KinectManager kinectManager = KinectManager.Instance;
-			
-			if(texturedModelMesh != TextureType.None)
+
+			if (!bGotModelVerticesFromDC) 
 			{
-				float colorWidth = (float)kinectManager.GetColorImageWidth();
-				float colorHeight = (float)kinectManager.GetColorImageHeight();
-
-				//bool bGotFaceRect = sensorData.sensorInterface.GetFaceRect(userId, ref faceRect);
-				bool faceRectValid = /**bGotFaceRect &&*/ faceRect.width > 0 && faceRect.height > 0;
-
-				if(texturedModelMesh == TextureType.ColorMap &&
-				   faceModelMesh.GetComponent<MeshRenderer>().material.mainTexture == null)
+				if(texturedModelMesh != TextureType.None)
 				{
-					faceModelMesh.GetComponent<MeshRenderer>().material.mainTexture = kinectManager.GetUsersClrTex();
+					float colorWidth = (float)kinectManager.GetColorImageWidth();
+					float colorHeight = (float)kinectManager.GetColorImageHeight();
+
+					//bool bGotFaceRect = sensorData.sensorInterface.GetFaceRect(userId, ref faceRect);
+					bool faceRectValid = /**bGotFaceRect &&*/ faceRect.width > 0 && faceRect.height > 0;
+
+					if(texturedModelMesh == TextureType.ColorMap &&
+						faceModelMesh.GetComponent<MeshRenderer>().material.mainTexture == null)
+					{
+						faceModelMesh.GetComponent<MeshRenderer>().material.mainTexture = kinectManager.GetUsersClrTex();
+					}
+
+					for(int i = 0; i < avModelVertices.Length; i++)
+					{
+						Vector2 posDepth = kinectManager.MapSpacePointToDepthCoords(avModelVertices[i]);
+
+						bool bUvSet = false;
+						if(posDepth != Vector2.zero)
+						{
+							ushort depth = kinectManager.GetDepthForPixel((int)posDepth.x, (int)posDepth.y);
+							Vector2 posColor = kinectManager.MapDepthPointToColorCoords(posDepth, depth);
+
+							if(posColor != Vector2.zero && !float.IsInfinity(posColor.x) && !float.IsInfinity(posColor.y))
+							{
+								if(texturedModelMesh == TextureType.ColorMap)
+								{
+									avModelUV[i] = new Vector2(posColor.x / colorWidth, posColor.y / colorHeight);
+									bUvSet = true;
+								}
+								else if(texturedModelMesh == TextureType.FaceRectangle && faceRectValid)
+								{
+									avModelUV[i] = new Vector2((posColor.x - faceRect.x) / faceRect.width, 
+										-(posColor.y - faceRect.y) / faceRect.height);
+									bUvSet = true;
+								}
+							}
+						}
+
+						if(!bUvSet)
+						{
+							avModelUV[i] = Vector2.zero;
+						}
+					}
+				}
+				else
+				{
+					if(faceModelMesh.GetComponent<MeshRenderer>().material.mainTexture != null)
+					{
+						faceModelMesh.GetComponent<MeshRenderer>().material.mainTexture = null;
+					}
+				}
+			}
+
+			if (!bGotModelVerticesFromDC) 
+			{
+				// make vertices relative to the head pos
+				Matrix4x4 kinectToWorld = kinectManager ? kinectManager.GetKinectToWorldMatrix() : Matrix4x4.identity;
+				Vector3 headPosWorld = kinectToWorld.MultiplyPoint3x4(headPos);
+
+				if (verticalMeshOffset != 0f) 
+				{
+					Vector3 headPosOfs = headRot * new Vector3(0, -verticalMeshOffset, 0);
+					headPosWorld += headPosOfs;
 				}
 
 				for(int i = 0; i < avModelVertices.Length; i++)
 				{
-					Vector2 posDepth = kinectManager.MapSpacePointToDepthCoords(avModelVertices[i]);
-
-					bool bUvSet = false;
-					if(posDepth != Vector2.zero)
-					{
-						ushort depth = kinectManager.GetDepthForPixel((int)posDepth.x, (int)posDepth.y);
-						Vector2 posColor = kinectManager.MapDepthPointToColorCoords(posDepth, depth);
-
-						if(posColor != Vector2.zero && !float.IsInfinity(posColor.x) && !float.IsInfinity(posColor.y))
-						{
-							if(texturedModelMesh == TextureType.ColorMap)
-							{
-								avModelUV[i] = new Vector2(posColor.x / colorWidth, posColor.y / colorHeight);
-								bUvSet = true;
-							}
-							else if(texturedModelMesh == TextureType.FaceRectangle && faceRectValid)
-							{
-								avModelUV[i] = new Vector2((posColor.x - faceRect.x) / faceRect.width, 
-								                           -(posColor.y - faceRect.y) / faceRect.height);
-								bUvSet = true;
-							}
-						}
-					}
-
-					if(!bUvSet)
-					{
-						avModelUV[i] = Vector2.zero;
-					}
-				}
-			}
-			else
-			{
-				if(faceModelMesh.GetComponent<MeshRenderer>().material.mainTexture != null)
-				{
-					faceModelMesh.GetComponent<MeshRenderer>().material.mainTexture = null;
+					avModelVertices[i] = kinectToWorld.MultiplyPoint3x4(avModelVertices[i]) - headPosWorld;
 				}
 			}
 
-			// make vertices relative to the head pos
-			Matrix4x4 kinectToWorld = kinectManager ? kinectManager.GetKinectToWorldMatrix() : Matrix4x4.identity;
-			Vector3 headPosWorld = kinectToWorld.MultiplyPoint3x4(headPos);
-
-			if (verticalMeshOffset != 0f) 
-			{
-				Vector3 headPosOfs = headRot * new Vector3(0, -verticalMeshOffset, 0);
-				headPosWorld += headPosOfs;
-			}
-
-			for(int i = 0; i < avModelVertices.Length; i++)
-			{
-				avModelVertices[i] = kinectToWorld.MultiplyPoint3x4(avModelVertices[i]) - headPosWorld;
-			}
-			
 			Mesh mesh = faceModelMesh.GetComponent<MeshFilter>().mesh;
 			mesh.vertices = avModelVertices;
-			if(texturedModelMesh != TextureType.None)
+
+			if(texturedModelMesh != TextureType.None && avModelUV != null)
 			{
 				mesh.uv = avModelUV;
 			}
@@ -963,7 +975,7 @@ public class FacetrackingManager : MonoBehaviour
 			float.TryParse(alCsvParts[iIndex], out x);
 			float.TryParse(alCsvParts[iIndex + 1], out y);
 			float.TryParse(alCsvParts[iIndex + 2], out w);
-			float.TryParse(alCsvParts[iIndex + 2], out h);
+			float.TryParse(alCsvParts[iIndex + 3], out h);
 			iIndex += 4;
 
 			faceRect.x = x; faceRect.y = y;
@@ -1011,6 +1023,262 @@ public class FacetrackingManager : MonoBehaviour
 		}
 
 		// any other parameters here...
+
+		// emulate face tracking
+		lastFaceTrackedTime = Time.realtimeSinceStartup;
+
+		return true;
+	}
+
+	// gets face model vertices as csv line
+	public string GetFaceVerticesAsCsv()
+	{
+		// create the output string
+		StringBuilder sbBuf = new StringBuilder();
+		const char delimiter = ',';
+
+		if (bGotModelVertices && avModelVertices != null)
+		{
+			sbBuf.Append("fv").Append(delimiter);
+
+			// model vertices
+			int vertCount = avModelVertices.Length;
+			sbBuf.Append (vertCount).Append(delimiter);
+
+			for (int i = 0; i < vertCount; i++) 
+			{
+				sbBuf.AppendFormat ("{0:F3}", avModelVertices[i].x).Append (delimiter);
+				sbBuf.AppendFormat ("{0:F3}", avModelVertices[i].y).Append (delimiter);
+				sbBuf.AppendFormat ("{0:F3}", avModelVertices[i].z).Append (delimiter);
+			}
+		}
+
+		// remove the last delimiter
+		if(sbBuf.Length > 0 && sbBuf[sbBuf.Length - 1] == delimiter)
+		{
+			sbBuf.Remove(sbBuf.Length - 1, 1);
+		}
+
+		return sbBuf.ToString();
+	}
+
+	// sets face model vertices from a csv line
+	public bool SetFaceVerticesFromCsv(string sCsvLine)
+	{
+		if(sCsvLine.Length == 0)
+			return false;
+
+		// split the csv line in parts
+		char[] delimiters = { ',' };
+		string[] alCsvParts = sCsvLine.Split(delimiters);
+
+		if(alCsvParts.Length < 1 || alCsvParts[0] != "fv")
+			return false;
+
+		int iIndex = 1;
+		int iLength = alCsvParts.Length;
+
+		if (iLength < (iIndex + 1))
+			return false;
+
+		// model vertices
+		int vertCount = 0;
+		int.TryParse(alCsvParts[iIndex], out vertCount);
+		iIndex++;
+
+		if (vertCount > 0) 
+		{
+			if (avModelVertices == null || avModelVertices.Length != vertCount) 
+			{
+				avModelVertices = new Vector3[vertCount];
+			}
+
+			for (int i = 0; i < vertCount && iLength >= (iIndex + 3); i++) 
+			{
+				float x = 0f, y = 0f, z = 0f;
+
+				float.TryParse(alCsvParts[iIndex], out x);
+				float.TryParse(alCsvParts[iIndex + 1], out y);
+				float.TryParse(alCsvParts[iIndex + 2], out z);
+				iIndex += 3;
+
+				avModelVertices[i] = new Vector3(x, y, z);
+			}
+
+			bGotModelVertices = true;
+			bGotModelVerticesFromDC = true;
+		}
+
+		return true;
+	}
+
+	// gets face model UVs as csv line
+	public string GetFaceUvsAsCsv()
+	{
+		// create the output string
+		StringBuilder sbBuf = new StringBuilder();
+		const char delimiter = ',';
+
+		if (bGotModelVertices && avModelUV != null)
+		{
+			sbBuf.Append("fu").Append(delimiter);
+
+			// face rect width & height
+			sbBuf.AppendFormat ("{0:F0}", faceRect.width).Append (delimiter);
+			sbBuf.AppendFormat ("{0:F0}", faceRect.height).Append (delimiter);
+
+			// model UVs
+			int uvCount = avModelUV.Length;
+			sbBuf.Append (uvCount).Append(delimiter);
+
+			for (int i = 0; i < uvCount; i++) 
+			{
+				sbBuf.AppendFormat ("{0:F3}", avModelUV[i].x).Append (delimiter);
+				sbBuf.AppendFormat ("{0:F3}", avModelUV[i].y).Append (delimiter);
+			}
+		}
+
+		// remove the last delimiter
+		if(sbBuf.Length > 0 && sbBuf[sbBuf.Length - 1] == delimiter)
+		{
+			sbBuf.Remove(sbBuf.Length - 1, 1);
+		}
+
+		return sbBuf.ToString();
+	}
+
+	// sets face model UVs from a csv line
+	public bool SetFaceUvsFromCsv(string sCsvLine)
+	{
+		if(sCsvLine.Length == 0)
+			return false;
+
+		// split the csv line in parts
+		char[] delimiters = { ',' };
+		string[] alCsvParts = sCsvLine.Split(delimiters);
+
+		if(alCsvParts.Length < 1 || alCsvParts[0] != "fu")
+			return false;
+
+		int iIndex = 1;
+		int iLength = alCsvParts.Length;
+
+		if (iLength < (iIndex + 2))
+			return false;
+
+		// face width & height
+		float w = 0f, h = 0f;
+
+		float.TryParse(alCsvParts[iIndex], out w);
+		float.TryParse(alCsvParts[iIndex + 1], out h);
+		iIndex += 2;
+
+		faceRect.width = w; faceRect.height = h;
+
+		// model UVs
+		int uvCount = 0;
+		if (iLength >= (iIndex + 1)) 
+		{
+			int.TryParse(alCsvParts[iIndex], out uvCount);
+			iIndex++;
+		}
+
+		if (uvCount > 0) 
+		{
+			if (avModelUV == null || avModelUV.Length != uvCount) 
+			{
+				avModelUV = new Vector2[uvCount];
+			}
+
+			for (int i = 0; i < uvCount && iLength >= (iIndex + 2); i++) 
+			{
+				float x = 0f, y = 0f;
+
+				float.TryParse(alCsvParts[iIndex], out x);
+				float.TryParse(alCsvParts[iIndex + 1], out y);
+				iIndex += 2;
+
+				avModelUV[i] = new Vector2(x, y);
+			}
+		}
+
+		return true;
+	}
+
+	// gets face model triangles as csv line
+	public string GetFaceTrianglesAsCsv()
+	{
+		// create the output string
+		StringBuilder sbBuf = new StringBuilder();
+		const char delimiter = ',';
+
+		if (avModelTriangles != null)
+		{
+			sbBuf.Append("ft").Append(delimiter);
+
+			// model triangles
+			int triCount = avModelTriangles.Length;
+			sbBuf.Append (triCount).Append(delimiter);
+
+			for (int i = 0; i < triCount; i++) 
+			{
+				sbBuf.Append(avModelTriangles[i]).Append (delimiter);
+			}
+		}
+
+		// remove the last delimiter
+		if(sbBuf.Length > 0 && sbBuf[sbBuf.Length - 1] == delimiter)
+		{
+			sbBuf.Remove(sbBuf.Length - 1, 1);
+		}
+
+		return sbBuf.ToString();
+	}
+
+	// sets face model model from a csv line
+	public bool SetFaceTrianglesFromCsv(string sCsvLine)
+	{
+		if(sCsvLine.Length == 0)
+			return false;
+
+		// split the csv line in parts
+		char[] delimiters = { ',' };
+		string[] alCsvParts = sCsvLine.Split(delimiters);
+
+		if(alCsvParts.Length < 1 || alCsvParts[0] != "ft")
+			return false;
+
+		int iIndex = 1;
+		int iLength = alCsvParts.Length;
+
+		if (iLength < (iIndex + 1))
+			return false;
+
+		// model triangles
+		int triCount = 0;
+		int.TryParse(alCsvParts[iIndex], out triCount);
+		iIndex++;
+
+		if (triCount > 0) 
+		{
+			if (avModelTriangles == null || avModelTriangles.Length != triCount) 
+			{
+				avModelTriangles = new int[triCount];
+			}
+
+			for (int i = 0; i < triCount && iLength >= (iIndex + 1); i++) 
+			{
+				int v = 0;
+
+				int.TryParse(alCsvParts[iIndex], out v);
+				iIndex++;
+
+				avModelTriangles[i] = v;
+			}
+
+			bGotModelTriangles = true;
+			bGotModelTrianglesFromDC = true;
+		}
 
 		return true;
 	}

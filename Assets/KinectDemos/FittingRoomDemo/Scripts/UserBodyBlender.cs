@@ -21,7 +21,7 @@ public class UserBodyBlender : MonoBehaviour
 
 	void Start () 
 	{
-		//GetComponent<Camera>().depthTextureMode = DepthTextureMode.Depth;
+		GetComponent<Camera>().depthTextureMode = DepthTextureMode.Depth;
 
 		kinectManager = KinectManager.Instance;
 

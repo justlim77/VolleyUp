@@ -24,6 +24,14 @@ public class BackgroundRemovalManager : MonoBehaviour
 
 	[Tooltip("Color used to paint pixels, where the foreground color data is not available.")]
 	private Color32 defaultColor = new Color32(64, 64, 64, 255);
+
+	[Tooltip("(Advanced) Number of erode iterations used.")]
+	[Range(0, 9)]
+	public int erodeIterations = 3;
+
+	[Tooltip("(Advanced) Number of dilate iterations used.")]
+	[Range(0, 9)]
+	public int dilateIterations = 3;
 	
 	[Tooltip("GUI-Text to display the BR-Manager debug messages.")]
 	public GUIText debugText;
@@ -122,6 +130,8 @@ public class BackgroundRemovalManager : MonoBehaviour
 	
 	void Start() 
 	{
+		instance = this;
+
 		try 
 		{
 			// get sensor data
@@ -187,7 +197,6 @@ public class BackgroundRemovalManager : MonoBehaviour
 				foregroundRect = new Rect((cameraRect.width - rectWidth) / 2, cameraRect.height - (cameraRect.height - rectHeight) / 2, rectWidth, -rectHeight);
 			}
 
-			instance = this;
 			isBrInited = true;
 			
 			//DontDestroyOnLoad(gameObject);
@@ -196,13 +205,13 @@ public class BackgroundRemovalManager : MonoBehaviour
 		{
 			Debug.LogError(ex.ToString());
 			if(debugText != null)
-				debugText.GetComponent<GUIText>().text = "Please check the Kinect and BR-Library installations.";
+				debugText.text = "Please check the Kinect and BR-Library installations.";
 		}
 		catch (Exception ex) 
 		{
 			Debug.LogError(ex.ToString());
 			if(debugText != null)
-				debugText.GetComponent<GUIText>().text = ex.Message;
+				debugText.text = ex.Message;
 		}
 	}
 
@@ -249,6 +258,10 @@ public class BackgroundRemovalManager : MonoBehaviour
 				// show all players
 				sensorData.selectedBodyIndex = 255;
 			}
+
+			// erode & dilate iterations
+			sensorData.erodeIterations = erodeIterations;
+			sensorData.dilateIterations = dilateIterations;
 
 			// update the background removal
 			bool bSuccess = sensorData.sensorInterface.UpdateBackgroundRemoval(sensorData, colorCameraResolution, defaultColor, computeBodyTexOnly);

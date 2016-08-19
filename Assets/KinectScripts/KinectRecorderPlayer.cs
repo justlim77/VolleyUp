@@ -99,7 +99,7 @@ public class KinectRecorderPlayer : MonoBehaviour
 			Debug.LogError("No file to save.");
 			if(infoText != null)
 			{
-				infoText.GetComponent<GUIText>().text = "No file to save.";
+				infoText.text = "No file to save.";
 			}
 		}
 		
@@ -108,7 +108,7 @@ public class KinectRecorderPlayer : MonoBehaviour
 			Debug.Log("Recording started.");
 			if(infoText != null)
 			{
-				infoText.GetComponent<GUIText>().text = "Recording... Say 'Stop' to stop the recorder.";
+				infoText.text = "Recording... Say 'Stop' to stop the recorder.";
 			}
 			
 			// delete the old csv file
@@ -149,7 +149,7 @@ public class KinectRecorderPlayer : MonoBehaviour
 
 			if(infoText != null)
 			{
-				infoText.GetComponent<GUIText>().text = "No file to play.";
+				infoText.text = "No file to play.";
 			}
 		}
 		
@@ -158,7 +158,7 @@ public class KinectRecorderPlayer : MonoBehaviour
 			Debug.Log("Playing started.");
 			if(infoText != null)
 			{
-				infoText.GetComponent<GUIText>().text = "Playing... Say 'Stop' to stop the player.";
+				infoText.text = "Playing... Say 'Stop' to stop the player.";
 			}
 
 			// initialize times
@@ -166,7 +166,9 @@ public class KinectRecorderPlayer : MonoBehaviour
 			fCurrentFrame = -1;
 
 			// open the file and read a line
+#if !UNITY_WSA
 			fileReader = new StreamReader(filePath);
+#endif
 			ReadLineFromFile();
 			
 			// enable the play mode
@@ -190,7 +192,7 @@ public class KinectRecorderPlayer : MonoBehaviour
 			Debug.Log("Recording stopped.");
 			if(infoText != null)
 			{
-				infoText.GetComponent<GUIText>().text = "Recording stopped.";
+				infoText.text = "Recording stopped.";
 			}
 		}
 
@@ -203,13 +205,13 @@ public class KinectRecorderPlayer : MonoBehaviour
 			Debug.Log("Playing stopped.");
 			if(infoText != null)
 			{
-				infoText.GetComponent<GUIText>().text = "Playing stopped.";
+				infoText.text = "Playing stopped.";
 			}
 		}
 
 		if(infoText != null)
 		{
-			infoText.GetComponent<GUIText>().text = "Say: 'Record' to start the recorder, or 'Play' to start the player.";
+			infoText.text = "Say: 'Record' to start the recorder, or 'Play' to start the player.";
 		}
 	}
 
@@ -237,7 +239,7 @@ public class KinectRecorderPlayer : MonoBehaviour
 	{
 		if(infoText != null)
 		{
-			infoText.GetComponent<GUIText>().text = "Say: 'Record' to start the recorder, or 'Play' to start the player.";
+			infoText.text = "Say: 'Record' to start the recorder, or 'Play' to start the player.";
 		}
 
 		if(!manager)
@@ -250,7 +252,7 @@ public class KinectRecorderPlayer : MonoBehaviour
 
 			if(infoText != null)
 			{
-				infoText.GetComponent<GUIText>().text = "KinectManager not found, probably not initialized.";
+				infoText.text = "KinectManager not found, probably not initialized.";
 			}
 		}
 		
@@ -271,6 +273,7 @@ public class KinectRecorderPlayer : MonoBehaviour
 
 				if(sBodyFrame.Length > 0)
 				{
+#if !UNITY_WSA
 					using(StreamWriter writer = File.AppendText(filePath))
 					{
 						string sRelTime = string.Format("{0:F3}", (fCurrentTime - fStartTime));
@@ -278,11 +281,15 @@ public class KinectRecorderPlayer : MonoBehaviour
 
 						if(infoText != null)
 						{
-							infoText.GetComponent<GUIText>().text = string.Format("Recording @ {0}s., frame {1}. Say 'Stop' to stop the player.", sRelTime, fCurrentFrame);
+							infoText.text = string.Format("Recording @ {0}s., frame {1}. Say 'Stop' to stop the player.", sRelTime, fCurrentFrame);
 						}
 
 						fCurrentFrame++;
 					}
+#else
+					string sRelTime = string.Format("{0:F3}", (fCurrentTime - fStartTime));
+					Debug.Log(sRelTime + "|" + sBodyFrame);
+#endif
 				}
 			}
 		}
@@ -343,7 +350,7 @@ public class KinectRecorderPlayer : MonoBehaviour
 
 			if(infoText != null)
 			{
-				infoText.GetComponent<GUIText>().text = string.Format("Playing @ {0:F3}s., frame {1}. Say 'Stop' to stop the player.", fPlayTime, fCurrentFrame);
+				infoText.text = string.Format("Playing @ {0:F3}s., frame {1}. Say 'Stop' to stop the player.", fPlayTime, fCurrentFrame);
 			}
 
 			return true;

@@ -565,8 +565,9 @@ public class Kinect1Interface : DepthSensorInterface
 			string sZipFileName = !KinectInterop.Is64bitArchitecture() ? "KinectV1UnityWrapper.x86.zip" : "KinectV1UnityWrapper.x64.zip";
 			long iTargetSize = KinectInterop.GetUnzippedEntrySize(sZipFileName, "KinectUnityWrapper.dll");
 
-			System.IO.FileInfo targetFile = new System.IO.FileInfo(sTargetLib);
-			return targetFile.Exists && targetFile.Length == iTargetSize;
+//			System.IO.FileInfo targetFile = new System.IO.FileInfo(sTargetLib);
+//			return targetFile.Exists && targetFile.Length == iTargetSize;
+			return KinectInterop.IsFileExists(sTargetLib, iTargetSize);
 		}
 
 		if(!KinectInterop.Is64bitArchitecture())
@@ -929,8 +930,8 @@ public class Kinect1Interface : DepthSensorInterface
 						{
 							//jointData.kinectPos = body.SkeletonPositions[j];
 							float jPosZ = (bIgnoreJointZ && j > 0) ? bodyFrame.bodyData[i].joint[0].kinectPos.z : body.SkeletonPositions[j].z;
-							jointData.kinectPos = new Vector3(body.SkeletonPositions[j].x, body.SkeletonPositions[j].y, jPosZ);
-							jointData.position = kinectToWorld.MultiplyPoint3x4(jointData.kinectPos);
+							jointData.kinectPos = new Vector3(body.SkeletonPositions[j].x, body.SkeletonPositions[j].y, body.SkeletonPositions[j].z);
+							jointData.position = kinectToWorld.MultiplyPoint3x4(new Vector3(body.SkeletonPositions[j].x, body.SkeletonPositions[j].y, jPosZ));
 						}
 						
 						jointData.orientation = Quaternion.identity;
