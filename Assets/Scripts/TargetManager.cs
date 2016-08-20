@@ -28,16 +28,23 @@ namespace Volley
             if(Instance == null)
                 Instance = this;
 
+        }
+
+        void OnEnable()
+        {
             Core.SubscribeEvent("OnTargetHitUpdate", OnTargetHitUpdate);
             Core.SubscribeEvent("OnHitReqChange", OnHitReqChange);
+        }
+
+        void OnDisabled()
+        {
+            Core.UnsubscribeEvent("OnTargetHitUpdate", OnTargetHitUpdate);
+            Core.UnsubscribeEvent("OnHitReqChange", OnHitReqChange);
         }
 
         void OnDestroy()
         {
             Instance = null;
-
-            Core.UnsubscribeEvent("OnTargetHitUpdate", OnTargetHitUpdate);
-            Core.UnsubscribeEvent("OnHitReqChange", OnHitReqChange);
         }
 
         object OnTargetHitUpdate(object sender, object args)
@@ -115,7 +122,6 @@ namespace Volley
             _prevIdx = _currentIdx = 0;
             _currentHits = 0;
             _firstHit = true;
-
 
             Core.BroadcastEvent("OnHitCountUpdate", this, 0);
         }

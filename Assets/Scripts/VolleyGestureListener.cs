@@ -57,18 +57,16 @@ namespace Volley
 
             GameManager gameManager = GameManager.Instance;
 
-            Debug.Log("[UserDetected] PrimaryUserID: " + manager.GetPrimaryUserID() + ", DetectedUserID: " + userId);
-
             foreach(var gesture in gesturesToDetect)
                 manager.DetectGesture(userId, gesture);
 
             gameManager.SpawnPlayer(playerIndex);
+            AudioManager.Instance.PlayOneShot(SoundType.HumanGruntOk);
+            gameManager.SetState(GameState.Pregame);
 
             if (gestureInfo != null)
             {
                 gestureInfo.text = startMessage;
-                AudioManager.Instance.PlayOneShot(SoundType.HumanGruntOk);
-                gameManager.SetState(GameState.Pregame);
             }
         }
 
@@ -79,15 +77,19 @@ namespace Volley
         /// <param name="userIndex">User index</param>
         public void UserLost(long userId, int userIndex)
         {
+            // the gestures are allowed for the primary user only
             KinectManager manager = KinectManager.Instance;
+            if (!manager || (userIndex != playerIndex))
+                return;
+
             GameManager gameManager = GameManager.Instance;
 
             if (gestureInfo != null)
             {
-                gestureInfo.text = findingMessage;                  // Show waiting for users feedback
-                gameManager.SetState(GameState.Waiting);   // Set game state to waiting
+                gestureInfo.text = findingMessage;          // Show waiting for users feedback
             }
 
+            gameManager.SetState(GameState.Waiting);    // Set game state to waiting
             gameManager.RemovePlayer(playerIndex);
         }
 
@@ -158,16 +160,15 @@ namespace Volley
             if (progressDisplayed)
                 return true;
 
-            if (gestureInfo != null)
-            {
-                string sGestureText = gesture + " detected";
-                if (gesture == KinectGestures.Gestures.UnderhandLeftToss)
-                    VolleySpawner.Instance.Spawn(KinectManager.Instance.GetJointKinectPosition(userId, (int)joint));
+            if (gesture == KinectGestures.Gestures.UnderhandLeftToss)
+                VolleySpawner.Instance.Spawn(KinectManager.Instance.GetJointKinectPosition(userId, (int)joint));
 
-                gestureInfo.text = sGestureText;
-            }
+            //if (gestureInfo != null)
+            //{
+            //    string sGestureText = gesture + " detected";
 
-
+            //    gestureInfo.text = sGestureText;
+            //}
 
             return true;
         }

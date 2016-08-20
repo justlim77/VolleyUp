@@ -39,7 +39,8 @@ namespace Volley
 	    // Use this for initialization
 	    void Start ()
         {
-            _spawnBoneTransform[0] = GameManager.Instance.players[0].GetComponent<Animator>().GetBoneTransform(spawnAtBone);
+            //foreach(var humanBones in GameManager.Instance.players[0].GetComponent<Animator>().bone)
+            _spawnBoneTransform[0] = GameManager.Instance.playerAnimator.GetBoneTransform(spawnAtBone);
 
             objectPool.Init(transform);
 
@@ -76,7 +77,8 @@ namespace Volley
 
             if (useOffset)
             {
-                Vector3 dir = (_spawnBoneTransform[0].right * unitOffset) + _spawnBoneTransform[0].position;
+                Vector3 dir = _spawnBoneTransform[0].TransformPoint(spawnOffset);/* position)*//* + (_spawnBoneTransform[0].forward * unitOffset);*/;
+                print(dir);
                 //dir.Normalize();
                 //pos += dir;
                 pos = dir;

@@ -24,7 +24,7 @@ namespace Volley
 
         Collider col;
         Vector3 _cachedVel;
-        Transform _cachedBoneTransform;
+        [SerializeField] Transform _cachedBoneTransform;
 
         // Use this for initialization
         void Start ()

@@ -39,9 +39,17 @@ namespace Volley
         {
             if(Instance == null)
                 Instance = this;
+        }
 
+        void OnEnable()
+        {
             Core.SubscribeEvent("OnBallHit", OnBallHit);
             Core.SubscribeEvent("OnTargetHit", OnTargetHit);
+        }
+        void OnDisable()
+        {
+            Core.UnsubscribeEvent("OnBallHit", OnBallHit);
+            Core.UnsubscribeEvent("OnTargetHit", OnTargetHit);
         }
 
         void Start()
@@ -49,6 +57,7 @@ namespace Volley
 #if !UNITY_EDITOR
             Cursor.visible = false;
 #endif
+            Application.targetFrameRate = 60;
             Reset();
         }
 
@@ -57,7 +66,7 @@ namespace Volley
             if (_pendingReset)
             {
                 _pendingReset = false;
-                //KinectManager.Instance.ClearKinectUsers();
+                KinectManager.Instance.ClearKinectUsers();
             }
 
             if (RoundStarted)
@@ -67,8 +76,7 @@ namespace Volley
 
                 // Combo timer
                 ComboTimer += Time.deltaTime;
-
-                if (ComboTimer > comboInterval)
+                if (ComboTimer >= comboInterval)
                 {
                     Combo = 1;
                     ComboTimer = 0;
@@ -125,15 +133,14 @@ namespace Volley
         {
             _pendingReset = true;
 
-            foreach (var player in players)
-            {
-                player.SetActive(false);
-            }
+            RemovePlayer(0);
 
             RoundStarted = false;
 
             GameTimer = 0;
             ComboTimer = 0;
+
+            Core.BroadcastEvent("OnNotificationUpdate", this, "Raise right hand to play");
 
             Score = 0;
             Core.BroadcastEvent("OnScoreUpdate", this, Score);
@@ -180,7 +187,6 @@ namespace Volley
             players[idx].SetActive(true);
 
             volleySpawner.SetBone(idx);
-
         }
 
         public void RemovePlayer(int idx)
