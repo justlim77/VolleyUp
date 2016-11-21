@@ -84,9 +84,10 @@ namespace Volley
                     vel.x *= rightDirOffset;
                 }
 
-                Vector3 externalForce = new Vector3(horizontalForce.x * vel.x, yForce * vel.y, horizontalForce.z * vel.z);
+                //Vector3 externalForce = new Vector3(horizontalForce.x * vel.x, yForce * vel.y, horizontalForce.z * vel.z);
                 print(vel);
                 //Vector3 externalForce = new Vector3(horizontalForce.x * _cachedBoneTransform.forward.z, horizontalForce.y * vel.y, horizontalForce.z * vel.z);
+                Vector3 externalForce = new Vector3(horizontalForce.x * _cachedBoneTransform.forward.z, yForce* vel.y, horizontalForce.z * vel.z);
 
                 //Logger.Log(_cachedBoneTransform.forward.z);
                 //Logger.Log("Collision velocity: " + vel);
